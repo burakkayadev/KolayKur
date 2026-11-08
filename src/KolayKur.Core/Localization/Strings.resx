@@ -124,7 +124,7 @@
     <value>Güncellemesi olan uygulama yok.</value>
   </data>
   <data name="Error_NoInternet" xml:space="preserve">
-    <value>İnternet bağlantısı yok. Bağlantınızı kontrol edip tekrar deneyin.</value>
+    <value>winget kataloğuna ulaşılamadı; bağlantınızı kontrol edip tekrar deneyin.</value>
   </data>
   <data name="Error_Generic" xml:space="preserve">
     <value>Beklenmeyen bir hata oluştu. Biraz sonra tekrar deneyin.</value>
@@ -260,5 +260,29 @@
   </data>
   <data name="Repair_DownloadStalled" xml:space="preserve">
     <value>İndirme takıldı: uzun süredir veri gelmiyor. İnternet bağlantınızı kontrol edip "Onar" düğmesine yeniden basın; indirme baştan başlar.</value>
+  </data>
+  <data name="Reason_NotFound" xml:space="preserve">
+    <value>Uygulama bulunamadı (winget kataloğunda yok ya da kurulu değil).</value>
+  </data>
+  <data name="Reason_CatalogUnavailable" xml:space="preserve">
+    <value>winget kataloğuna ulaşılamadı; bağlantınızı kontrol edip tekrar deneyin.</value>
+  </data>
+  <data name="Reason_InstallFailed" xml:space="preserve">
+    <value>Kurulum tamamlanamadı.</value>
+  </data>
+  <data name="Reason_UpgradeFailed" xml:space="preserve">
+    <value>Güncelleme tamamlanamadı.</value>
+  </data>
+  <data name="Reason_UpgradeNotNeeded" xml:space="preserve">
+    <value>Bu uygulama için uygun bir güncelleme yok.</value>
+  </data>
+  <data name="Reason_UninstallFailed" xml:space="preserve">
+    <value>Kaldırma tamamlanamadı.</value>
+  </data>
+  <data name="Reason_UserCancelled" xml:space="preserve">
+    <value>İşlem iptal edildi (örneğin yönetici izni verilmedi).</value>
+  </data>
+  <data name="Reason_Unexpected" xml:space="preserve">
+    <value>Beklenmeyen bir hata oluştu. Ayrıntılar günlük dosyasında.</value>
   </data>
 </root>

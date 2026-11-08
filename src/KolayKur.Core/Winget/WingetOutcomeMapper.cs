@@ -21,21 +21,38 @@ internal static class WingetOutcomeMapper
     private const uint ExitCodeCancelled = 1223;
     private const uint ExitCodeMsiUserExit = 1602;
 
-    public static OperationOutcome MapInstall(InstallResultStatus status, int extendedErrorCode, uint installerErrorCode) =>
-        Map(status == InstallResultStatus.Ok, status.ToString(), extendedErrorCode, installerErrorCode);
+    /// <param name="kind">Kurulum ve güncelleme aynı winget çağrısını kullanır; neden metni için hangisi olduğu gerekir.</param>
+    public static OperationOutcome MapInstall(
+        InstallResultStatus status, int extendedErrorCode, uint installerErrorCode, OperationKind kind = OperationKind.Install)
+    {
+        var failedReason = kind == OperationKind.Upgrade ? OperationReason.UpgradeFailed : OperationReason.InstallFailed;
+        if (status == InstallResultStatus.NoApplicableUpgrade)
+        {
+            failedReason = OperationReason.UpgradeNotNeeded;
+        }
+
+        return Map(status == InstallResultStatus.Ok, status.ToString(), extendedErrorCode, installerErrorCode, failedReason);
+    }
 
     public static OperationOutcome MapUninstall(UninstallResultStatus status, int extendedErrorCode, uint uninstallerErrorCode) =>
-        Map(status == UninstallResultStatus.Ok, status.ToString(), extendedErrorCode, uninstallerErrorCode);
+        Map(
+            status == UninstallResultStatus.Ok,
+            status.ToString(),
+            extendedErrorCode,
+            uninstallerErrorCode,
+            OperationReason.UninstallFailed);
 
     public static bool IsCancellation(int extendedErrorCode, uint installerErrorCode) =>
         extendedErrorCode is ErrorCancelledHresult or WingetCtrlSignalReceived or WingetInstallCancelledByUser
         || installerErrorCode is ExitCodeCancelled or ExitCodeMsiUserExit;
 
-    private static OperationOutcome Map(bool succeeded, string statusName, int extendedErrorCode, uint installerErrorCode)
+    // Message dilden bağımsız teknik ayrıntıdır (günlük/ipucu); kullanıcıya ReasonKey'in metni gösterilir.
+    private static OperationOutcome Map(
+        bool succeeded, string statusName, int extendedErrorCode, uint installerErrorCode, string failedReason)
     {
         var details = string.Create(
             CultureInfo.InvariantCulture,
-            $"{statusName} (hata 0x{extendedErrorCode:X8}, çıkış kodu {installerErrorCode})");
+            $"{statusName} (error 0x{extendedErrorCode:X8}, exit code {installerErrorCode})");
 
         if (succeeded)
         {
@@ -43,7 +60,7 @@ internal static class WingetOutcomeMapper
         }
 
         return IsCancellation(extendedErrorCode, installerErrorCode)
-            ? new OperationOutcome(OperationStatus.Cancelled, details)
-            : new OperationOutcome(OperationStatus.Failed, details);
+            ? new OperationOutcome(OperationStatus.Cancelled, details, OperationReason.UserCancelled)
+            : new OperationOutcome(OperationStatus.Failed, details, failedReason);
     }
 }

@@ -38,14 +38,36 @@ public sealed class OperationTextsTests
     }
 
     [Fact]
-    public void Running_stage_is_translated_but_final_message_is_shown_as_is()
+    public void Running_stage_is_translated_and_finished_items_show_the_localized_reason_never_the_raw_message()
     {
         Loc.Instance.SetLanguage("tr");
 
-        Assert.Equal("İndiriliyor", OperationTexts.MessageText(OperationStatus.Running, ProgressStage.Downloading));
-        Assert.Equal("downloading", OperationTexts.MessageText(OperationStatus.Failed, "downloading"));
-        Assert.Equal("hata ayrıntısı", OperationTexts.MessageText(OperationStatus.Failed, "hata ayrıntısı"));
-        Assert.Equal("bilinmeyen", OperationTexts.MessageText(OperationStatus.Running, "bilinmeyen"));
-        Assert.Equal(string.Empty, OperationTexts.MessageText(OperationStatus.Queued, null));
+        Assert.Equal("İndiriliyor", OperationTexts.DetailText(OperationStatus.Running, ProgressStage.Downloading, null));
+        Assert.Equal(string.Empty, OperationTexts.DetailText(OperationStatus.Running, "bilinmeyen", null));
+        Assert.Equal(string.Empty, OperationTexts.DetailText(OperationStatus.Queued, null, null));
+        Assert.Equal(string.Empty, OperationTexts.DetailText(OperationStatus.Succeeded, null, null));
+
+        var failed = OperationTexts.DetailText(
+            OperationStatus.Failed, "InstallError (error 0x1, exit code 1603)", OperationReason.InstallFailed);
+        Assert.Equal(Loc.Instance[OperationReason.InstallFailed], failed);
+        Assert.DoesNotContain("1603", failed, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(OperationStatus.Failed, OperationReason.Unexpected)]
+    [InlineData(OperationStatus.Cancelled, OperationReason.UserCancelled)]
+    [InlineData(OperationStatus.NotFound, OperationReason.NotFound)]
+    public void Finished_status_without_a_reason_uses_the_default_for_that_status(OperationStatus status, string expected)
+    {
+        Assert.Equal(expected, OperationTexts.ReasonKeyFor(status, null));
+        Assert.Equal(OperationReason.InstallFailed, OperationTexts.ReasonKeyFor(status, OperationReason.InstallFailed));
+    }
+
+    [Fact]
+    public void Statuses_that_need_no_explanation_have_no_default_reason()
+    {
+        Assert.Null(OperationTexts.ReasonKeyFor(OperationStatus.Succeeded, null));
+        Assert.Null(OperationTexts.ReasonKeyFor(OperationStatus.Running, null));
+        Assert.Null(OperationTexts.ReasonKeyFor(OperationStatus.Queued, null));
     }
 }

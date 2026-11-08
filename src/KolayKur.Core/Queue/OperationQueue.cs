@@ -145,7 +145,7 @@ public sealed class OperationQueue : ObservableObject
         catch (Exception ex)
         {
             TryLog(() => log.Error($"İşlem istisna ile bitti: {item.Kind} {package.Id}", ex));
-            outcome = new OperationOutcome(OperationStatus.Failed, ex.Message);
+            outcome = new OperationOutcome(OperationStatus.Failed, ex.Message, ReasonFor(ex));
         }
 
         item.Complete(outcome);
@@ -171,10 +171,14 @@ public sealed class OperationQueue : ObservableObject
         };
     }
 
+    private static string ReasonFor(Exception ex) =>
+        ex is CatalogUnavailableException ? OperationReason.CatalogUnavailable : OperationReason.Unexpected;
+
     /// <summary>İstemci Queued/Running gibi bitmemiş bir durum döndürürse işlem sonsuza dek "çalışıyor" kalmasın.</summary>
     private static OperationOutcome Normalize(OperationOutcome outcome) =>
         outcome.Status is OperationStatus.Queued or OperationStatus.Running
-            ? new OperationOutcome(OperationStatus.Failed, $"İstemci geçersiz bir durum döndürdü: {outcome.Status}")
+            ? new OperationOutcome(
+                OperationStatus.Failed, $"client returned an invalid status: {outcome.Status}", OperationReason.Unexpected)
             : outcome;
 
     private void CountOutcome(OperationStatus status)

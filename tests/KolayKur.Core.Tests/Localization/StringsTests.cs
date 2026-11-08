@@ -86,4 +86,18 @@ public sealed class StringsTests
     {
         Assert.Equal("!Yok_Boyle_Anahtar!", Loc.Instance["Yok_Boyle_Anahtar"]);
     }
+
+    [Fact]
+    public void Catalog_unreachable_message_does_not_claim_there_is_no_internet()
+    {
+        var turkish = Loc.Resources.GetString(SearchKey, CultureInfo.GetCultureInfo("tr"));
+        var english = Loc.Resources.GetString(SearchKey, CultureInfo.GetCultureInfo("en"));
+
+        Assert.Contains("winget kataloğuna ulaşılamadı", turkish, StringComparison.Ordinal);
+        Assert.DoesNotContain("bağlantısı yok", turkish, StringComparison.Ordinal);
+        Assert.Contains("could not be reached", english, StringComparison.Ordinal);
+        Assert.DoesNotContain("No internet", english, StringComparison.Ordinal);
+    }
+
+    private const string SearchKey = "Error_NoInternet";
 }

@@ -124,7 +124,7 @@
     <value>No apps have updates.</value>
   </data>
   <data name="Error_NoInternet" xml:space="preserve">
-    <value>No internet connection. Check your connection and try again.</value>
+    <value>The winget catalog could not be reached; check your connection and try again.</value>
   </data>
   <data name="Error_Generic" xml:space="preserve">
     <value>An unexpected error occurred. Try again in a moment.</value>
@@ -260,5 +260,29 @@
   </data>
   <data name="Repair_DownloadStalled" xml:space="preserve">
     <value>The download stalled: no data has arrived for a long time. Check your internet connection and press "Repair" again; the download will start over.</value>
+  </data>
+  <data name="Reason_NotFound" xml:space="preserve">
+    <value>App not found (it is not in the winget catalog or not installed).</value>
+  </data>
+  <data name="Reason_CatalogUnavailable" xml:space="preserve">
+    <value>The winget catalog could not be reached; check your connection and try again.</value>
+  </data>
+  <data name="Reason_InstallFailed" xml:space="preserve">
+    <value>The installation could not be completed.</value>
+  </data>
+  <data name="Reason_UpgradeFailed" xml:space="preserve">
+    <value>The update could not be completed.</value>
+  </data>
+  <data name="Reason_UpgradeNotNeeded" xml:space="preserve">
+    <value>There is no applicable update for this app.</value>
+  </data>
+  <data name="Reason_UninstallFailed" xml:space="preserve">
+    <value>The removal could not be completed.</value>
+  </data>
+  <data name="Reason_UserCancelled" xml:space="preserve">
+    <value>The operation was cancelled (for example, administrator permission was not granted).</value>
+  </data>
+  <data name="Reason_Unexpected" xml:space="preserve">
+    <value>An unexpected error occurred. Details are in the log file.</value>
   </data>
 </root>

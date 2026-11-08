@@ -72,6 +72,7 @@ public sealed class OperationQueueTests : IDisposable
             [OperationStatus.Succeeded, OperationStatus.Failed, OperationStatus.Succeeded],
             queue.Items.Select(item => item.Status));
         Assert.Equal("kurulum hatası", queue.Items[1].Message);
+        Assert.Equal(OperationReason.Unexpected, queue.Items[1].ReasonKey);
     }
 
     [Fact]
@@ -206,6 +207,7 @@ public sealed class OperationQueueTests : IDisposable
             [OperationStatus.Succeeded, OperationStatus.Failed, OperationStatus.Succeeded],
             queue.Items.Select(item => item.Status));
         Assert.Equal("winget çöktü", queue.Items[1].Message);
+        Assert.Equal(OperationReason.Unexpected, queue.Items[1].ReasonKey);
         Assert.Contains(
             "winget çöktü", File.ReadAllText(new FileLog(logDirectory).CurrentFile), StringComparison.Ordinal);
     }

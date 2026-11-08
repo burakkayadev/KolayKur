@@ -62,7 +62,7 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
         }
 
         var options = CreateInstallOptions();
-        return await RunInstallAsync(() => manager.InstallPackageAsync(package, options), progress, ct).ConfigureAwait(false);
+        return await RunInstallAsync(OperationKind.Install, () => manager.InstallPackageAsync(package, options), progress, ct).ConfigureAwait(false);
     }
 
     private async Task<OperationOutcome> UpgradeCoreAsync(
@@ -76,7 +76,7 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
         }
 
         var options = CreateInstallOptions();
-        return await RunInstallAsync(() => manager.UpgradePackageAsync(package, options), progress, ct).ConfigureAwait(false);
+        return await RunInstallAsync(OperationKind.Upgrade, () => manager.UpgradePackageAsync(package, options), progress, ct).ConfigureAwait(false);
     }
 
     private async Task<OperationOutcome> UninstallCoreAsync(
@@ -101,11 +101,12 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
         }
         catch (COMException ex)
         {
-            return FromComFailure(ex);
+            return FromComFailure(ex, OperationReason.UninstallFailed);
         }
     }
 
     private async Task<OperationOutcome> RunInstallAsync(
+        OperationKind kind,
         Func<Windows.Foundation.IAsyncOperationWithProgress<InstallResult, InstallProgress>> start,
         IProgress<OperationProgress> progress,
         CancellationToken ct)
@@ -116,11 +117,11 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
                 .AsTask(ct, new InlineProgress<InstallProgress>(p => progress.Report(ToProgress(p))))
                 .ConfigureAwait(false);
             return WingetOutcomeMapper.MapInstall(
-                result.Status, HResultOf(result.ExtendedErrorCode), result.InstallerErrorCode);
+                result.Status, HResultOf(result.ExtendedErrorCode), result.InstallerErrorCode, kind);
         }
         catch (COMException ex)
         {
-            return FromComFailure(ex);
+            return FromComFailure(ex, kind == OperationKind.Upgrade ? OperationReason.UpgradeFailed : OperationReason.InstallFailed);
         }
     }
 
@@ -151,11 +152,11 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
             var connect = await select(manager, remote).ConnectAsync().AsTask(ct).ConfigureAwait(false);
             return connect.Status == ConnectResultStatus.Ok
                 ? (manager, connect.PackageCatalog)
-                : throw new CatalogUnavailableException($"winget kataloğuna bağlanılamadı: {connect.Status}.");
+                : throw new CatalogUnavailableException($"could not connect to the winget catalog: {connect.Status}.");
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or CatalogUnavailableException))
         {
-            throw new CatalogUnavailableException($"winget kataloğuna bağlanılamadı: {ex.Message}", ex);
+            throw new CatalogUnavailableException($"could not connect to the winget catalog: {ex.Message}", ex);
         }
     }
 
@@ -206,11 +207,11 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
             var result = await catalog.FindPackagesAsync(options).AsTask(ct).ConfigureAwait(false);
             return result.Status == FindPackagesResultStatus.Ok
                 ? PackagesOf(result.Matches)
-                : throw new CatalogUnavailableException($"winget araması başarısız: {result.Status}.");
+                : throw new CatalogUnavailableException($"winget catalog search failed: {result.Status}.");
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or CatalogUnavailableException))
         {
-            throw new CatalogUnavailableException($"winget araması başarısız: {ex.Message}", ex);
+            throw new CatalogUnavailableException($"winget catalog search failed: {ex.Message}", ex);
         }
     }
 
@@ -244,16 +245,17 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;
 
     private static OperationOutcome NotFound(string packageId) =>
-        new(OperationStatus.NotFound, $"{packageId} bulunamadı.");
+        new(OperationStatus.NotFound, $"{packageId} not found.", OperationReason.NotFound);
 
     private static int HResultOf(Exception? extendedErrorCode) => extendedErrorCode?.HResult ?? 0;
 
-    private static OperationOutcome FromComFailure(COMException ex)
+    // Message dilden bağımsız teknik ayrıntıdır; kullanıcıya ReasonKey'in metni gösterilir.
+    private static OperationOutcome FromComFailure(COMException ex, string failedReason)
     {
-        var message = string.Create(CultureInfo.InvariantCulture, $"winget çağrısı başarısız (0x{ex.HResult:X8}): {ex.Message}");
+        var message = string.Create(CultureInfo.InvariantCulture, $"winget call failed (0x{ex.HResult:X8}): {ex.Message}");
         return WingetOutcomeMapper.IsCancellation(ex.HResult, 0)
-            ? new OperationOutcome(OperationStatus.Cancelled, message)
-            : new OperationOutcome(OperationStatus.Failed, message);
+            ? new OperationOutcome(OperationStatus.Cancelled, message, OperationReason.UserCancelled)
+            : new OperationOutcome(OperationStatus.Failed, message, failedReason);
     }
 
     // winget bu ilerleme değerlerini 0-1 aralığında verir; burada 0-100'e çevrilir.

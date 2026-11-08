@@ -91,15 +91,8 @@
                                              Value="{Binding Percent, Mode=OneWay}"
                                              Style="{StaticResource ItemProgressStyle}" />
                                 <TextBlock Grid.Column="4" Foreground="Gray" TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding Message}">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{StaticResource OperationText}" ConverterParameter="Message">
-                                            <Binding Path="Status" />
-                                            <Binding Path="Message" />
-                                            <Binding Path="Language" Source="{x:Static loc:Loc.Instance}" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                           Text="{Binding DetailText, Mode=OneWay}"
+                                           ToolTip="{Binding TechnicalDetail, Mode=OneWay}" />
                             </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

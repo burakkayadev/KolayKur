@@ -6,8 +6,9 @@ using KolayKur.Core.Models;
 namespace KolayKur.App;
 
 /// <summary>
-/// İşlem listesi metinleri için. <c>ConverterParameter</c>: <c>Status</c> (değerler: durum, dil),
-/// <c>Kind</c> (tür, dil) veya <c>Message</c> (durum, ileti, dil). Dil değerleri dil değişince yeniden çevirmeyi sağlar.
+/// İşlem listesi metinleri için. <c>ConverterParameter</c>: <c>Status</c> (değerler: durum, dil) veya
+/// <c>Kind</c> (tür, dil). Dil değerleri dil değişince yeniden çevirmeyi sağlar. Ayrıntı/neden metni
+/// <c>OperationItem.DetailText</c>'ten gelir (kendi dil bildirimini yapar).
 /// </summary>
 public sealed class OperationTextConverter : IMultiValueConverter
 {
@@ -16,8 +17,6 @@ public sealed class OperationTextConverter : IMultiValueConverter
         {
             ("Status", [OperationStatus status, ..]) => Loc.Instance[OperationTexts.StatusKey(status)],
             ("Kind", [OperationKind kind, ..]) => Loc.Instance[OperationTexts.KindKey(kind)],
-            ("Message", [OperationStatus status, var message, ..]) =>
-                OperationTexts.MessageText(status, message as string),
             _ => string.Empty,
         };
 

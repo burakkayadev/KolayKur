@@ -28,19 +28,32 @@ public static class OperationTexts
     public static string StageKey(string stage) => $"Stage_{stage}";
 
     /// <summary>
-    /// İşin yanında gösterilen ayrıntı. Çalışırken <see cref="OperationItem.Message"/> bir
-    /// <see cref="ProgressStage"/> anahtarıdır ve çevrilir; bittiğinde sonucun teknik ayrıntısıdır ve olduğu gibi gösterilir.
+    /// Bitmiş işin neden metni anahtarı: açıkça verilmişse o, yoksa duruma göre varsayılan; başarı ve bitmemiş durumlarda <c>null</c>.
     /// </summary>
-    public static string MessageText(OperationStatus status, string? message)
+    public static string? ReasonKeyFor(OperationStatus status, string? reasonKey) => status switch
     {
-        if (string.IsNullOrEmpty(message))
+        OperationStatus.Failed or OperationStatus.Cancelled or OperationStatus.NotFound when reasonKey is not null => reasonKey,
+        OperationStatus.Failed => OperationReason.Unexpected,
+        OperationStatus.Cancelled => OperationReason.UserCancelled,
+        OperationStatus.NotFound => OperationReason.NotFound,
+        _ => null,
+    };
+
+    /// <summary>
+    /// İşin yanında gösterilen ayrıntı, geçerli dilde. Çalışırken <paramref name="message"/> bir <see cref="ProgressStage"/>
+    /// anahtarıdır ve çevrilir; bittiğinde sonucun nedeni gösterilir. Ham teknik ayrıntı (hata kodları) burada asla
+    /// gösterilmez, yalnızca günlükte ve ipucunda yer alır.
+    /// </summary>
+    public static string DetailText(OperationStatus status, string? message, string? reasonKey)
+    {
+        if (status == OperationStatus.Running)
         {
-            return string.Empty;
+            return message is not null && Array.Exists(KnownStages, stage => string.Equals(stage, message, StringComparison.Ordinal))
+                ? Loc.Instance[StageKey(message)]
+                : string.Empty;
         }
 
-        var isStage = status == OperationStatus.Running
-            && Array.Exists(KnownStages, stage => string.Equals(stage, message, StringComparison.Ordinal));
-        return isStage ? Loc.Instance[StageKey(message)] : message;
+        return ReasonKeyFor(status, reasonKey) is { } key ? Loc.Instance[key] : string.Empty;
     }
 
     /// <summary>Toplu işin özeti; sayılar kültürden bağımsız yazılır.</summary>

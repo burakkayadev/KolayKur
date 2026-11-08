@@ -70,4 +70,24 @@ public class WingetOutcomeMapperTests
         Assert.False(WingetOutcomeMapper.IsCancellation(WingetShellExecFailed, 1));
         Assert.True(WingetOutcomeMapper.IsCancellation(ErrorCancelledHresult, 0));
     }
+
+    [Fact]
+    public void Failures_carry_a_resx_reason_key_and_language_neutral_details()
+    {
+        var install = WingetOutcomeMapper.MapInstall(InstallResultStatus.InstallError, WingetShellExecFailed, 1603);
+        var upgrade = WingetOutcomeMapper.MapInstall(
+            InstallResultStatus.InstallError, WingetShellExecFailed, 1603, OperationKind.Upgrade);
+        var notNeeded = WingetOutcomeMapper.MapInstall(
+            InstallResultStatus.NoApplicableUpgrade, WingetShellExecFailed, 0, OperationKind.Upgrade);
+        var uninstall = WingetOutcomeMapper.MapUninstall(UninstallResultStatus.UninstallError, WingetShellExecFailed, 3);
+        var cancelled = WingetOutcomeMapper.MapInstall(InstallResultStatus.InstallError, ErrorCancelledHresult, 0);
+
+        Assert.Equal(OperationReason.InstallFailed, install.ReasonKey);
+        Assert.Equal(OperationReason.UpgradeFailed, upgrade.ReasonKey);
+        Assert.Equal(OperationReason.UpgradeNotNeeded, notNeeded.ReasonKey);
+        Assert.Equal(OperationReason.UninstallFailed, uninstall.ReasonKey);
+        Assert.Equal(OperationReason.UserCancelled, cancelled.ReasonKey);
+        Assert.Equal("InstallError (error 0x8A150006, exit code 1603)", install.Message);
+        Assert.Null(WingetOutcomeMapper.MapInstall(InstallResultStatus.Ok, NoError, 0).ReasonKey);
+    }
 }

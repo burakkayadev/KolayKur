@@ -8,8 +8,25 @@ public enum OperationKind { Install, Upgrade, Uninstall }
 
 public enum OperationStatus { Queued, Running, Succeeded, Failed, Cancelled, NotFound }
 
-/// <summary>İşlem sonucu. <see cref="Message"/> teknik ayrıntıdır (günlük için), kullanıcı metni değildir.</summary>
-public sealed record OperationOutcome(OperationStatus Status, string? Message);
+/// <summary>
+/// İşlem sonucu. <see cref="Message"/> dilden bağımsız teknik ayrıntıdır (günlük ve ipucu için), kullanıcı metni değildir.
+/// <see cref="ReasonKey"/> başarısız/iptal/bulunamadı sonucunun kullanıcıya gösterilen nedenini anlatan <see cref="OperationReason"/>
+/// anahtarıdır (<c>Strings.resx</c>); yoksa durumdan türetilir.
+/// </summary>
+public sealed record OperationOutcome(OperationStatus Status, string? Message, string? ReasonKey = null);
+
+/// <summary>Bitmiş bir işin neden başarısız/iptal/bulunamadı olduğunu anlatan metin anahtarları (<c>Strings.resx</c>).</summary>
+public static class OperationReason
+{
+    public const string NotFound = "Reason_NotFound";
+    public const string CatalogUnavailable = "Reason_CatalogUnavailable";
+    public const string InstallFailed = "Reason_InstallFailed";
+    public const string UpgradeFailed = "Reason_UpgradeFailed";
+    public const string UpgradeNotNeeded = "Reason_UpgradeNotNeeded";
+    public const string UninstallFailed = "Reason_UninstallFailed";
+    public const string UserCancelled = "Reason_UserCancelled";
+    public const string Unexpected = "Reason_Unexpected";
+}
 
 /// <summary>
 /// İlerleme bildirimi. <see cref="Percent"/> 0-100 arasıdır, bilinmiyorsa <c>null</c>.
