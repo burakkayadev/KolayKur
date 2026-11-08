@@ -1,11 +1,25 @@
+using KolayKur.Core.Health;
 using KolayKur.Core.Winget;
 using Microsoft.Management.Deployment;
 
 const int ResultLimit = 5;
 
+if (args.Length == 1 && string.Equals(args[0], "diagnose", StringComparison.OrdinalIgnoreCase))
+{
+    var diagnosis = await new WingetHealthService(new WindowsSystemProbe()).DiagnoseAsync(CancellationToken.None);
+    Console.WriteLine($"State: {diagnosis.State}");
+    if (diagnosis.BrokenDependency is not null)
+    {
+        Console.WriteLine($"BrokenDependency: {diagnosis.BrokenDependency}");
+    }
+
+    Console.WriteLine($"Detail: {diagnosis.Detail}");
+    return 0;
+}
+
 if (args.Length < 2 || !string.Equals(args[0], "search", StringComparison.OrdinalIgnoreCase))
 {
-    Console.Error.WriteLine("Kullanım: Probe search <metin>");
+    Console.Error.WriteLine("Kullanım: Probe search <metin> | Probe diagnose");
     return 2;
 }
 
