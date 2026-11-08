@@ -39,6 +39,9 @@
   <data name="Startup_Failed" xml:space="preserve">
     <value>Winget denetlenirken beklenmeyen bir hata oluştu. Ayrıntılar günlük dosyasında.</value>
   </data>
+  <data name="Startup_FolderNotWritable" xml:space="preserve">
+    <value>KolayKur'un çalışması için gereken bir dosya bu klasöre yazılamadı. KolayKur.exe dosyasını yazılabilir bir klasöre (örneğin Masaüstü) kopyalayıp oradan açın.</value>
+  </data>
   <data name="Close_Confirm" xml:space="preserve">
     <value>Devam eden işlemler var. Şimdi kapatırsanız yarım kalabilirler. Yine de kapatmak istiyor musunuz?</value>
   </data>

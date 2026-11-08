@@ -3,7 +3,9 @@
   <!--
     Dış süreç winget nesneleri için COM, arayüzleri .winmd üzerinden (metadata-based marshaling) çözer.
     Dosya, çalıştıran exe'nin yanında bulunmazsa QueryInterface 0x80073D54 ile başarısız olur.
-    Core dışındaki her projenin (App, Probe, Tests) çıktısına ve yayınına kopyalanır.
+    Core dışındaki her projenin (App, Probe, Tests) çıktısına kopyalanır (geliştirme ve test için).
+    Yayında yalnızca Probe'a kopyalanır: KolayKur.App'in yayın klasörüne konmaz, çünkü App bu dosyayı açılışta kendi
+    içinden çıkarır (WinmdBootstrapper) ve yayın tek KolayKur.exe olarak dağıtılır.
   -->
   <ItemGroup Condition="'$(MSBuildProjectName)' != 'KolayKur.Core'">
     <Content Include="$(NuGetPackageRoot)microsoft.windowspackagemanager.cominterop/$(ComInteropVersion)/lib/uap10.0/Microsoft.Management.Deployment.winmd"
@@ -11,7 +13,13 @@
              Visible="false"
              CopyToOutputDirectory="PreserveNewest"
              CopyToPublishDirectory="PreserveNewest"
-             ExcludeFromSingleFile="true" />
+             ExcludeFromSingleFile="true"
+             Condition="'$(MSBuildProjectName)' != 'KolayKur.App'" />
+    <Content Include="$(NuGetPackageRoot)microsoft.windowspackagemanager.cominterop/$(ComInteropVersion)/lib/uap10.0/Microsoft.Management.Deployment.winmd"
+             Link="Microsoft.Management.Deployment.winmd"
+             Visible="false"
+             CopyToOutputDirectory="PreserveNewest"
+             Condition="'$(MSBuildProjectName)' == 'KolayKur.App'" />
   </ItemGroup>
 
 </Project>

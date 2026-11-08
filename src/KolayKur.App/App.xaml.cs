@@ -22,6 +22,13 @@ public partial class App : Application
         MainWindow? window = null;
         try
         {
+            // COM'a (winget nesnelerine) ilk dokunuştan önce winmd programın yanında olmalı.
+            if (!EnsureWinmd(dialogs))
+            {
+                Shutdown(1);
+                return;
+            }
+
             var app = Compose(dialogs);
             window = new MainWindow(app.Shell, app.Search, app.Updates, app.Installed, app.Settings, app.Operations);
             MainWindow = window;
@@ -42,6 +49,28 @@ public partial class App : Application
                 Shutdown(1);
             }
         }
+    }
+
+    /// <summary>
+    /// Tek exe dağıtımında winmd dosyasını gömülü kaynaktan programın yanına çıkarır. Klasör yazılamazsa kullanıcıya
+    /// ne yapacağını söyler ve <c>false</c> döner.
+    /// </summary>
+    private bool EnsureWinmd(IDialogService dialogs)
+    {
+        var result = WinmdBootstrapper.EnsureExtracted(
+            AppContext.BaseDirectory,
+            () => typeof(App).Assembly.GetManifestResourceStream("Microsoft.Management.Deployment.winmd"));
+
+        if (result.Status != WinmdStatus.ExtractionFailed)
+        {
+            return true;
+        }
+
+        Trace.TraceError($"winmd çıkarılamadı ({AppContext.BaseDirectory}): {result.Error}");
+        log = new FileLog(AppPaths.Logs);
+        log.TryError($"winmd dosyası {AppContext.BaseDirectory} klasörüne yazılamadı.", result.Error);
+        dialogs.Inform(Loc.Instance["Startup_FolderNotWritable"]);
+        return false;
     }
 
     /// <summary>

@@ -14,7 +14,7 @@ public sealed partial class WingetComFactory
 
     // APPMODEL_ERROR_NO_PACKAGE: winget yoksa da, .winmd dosyası çıktı klasöründe eksikse de bu kodla başarısız olunur.
     private const int AppModelErrorNoPackage = unchecked((int)0x80073D54);
-    private const string WinmdFileName = "Microsoft.Management.Deployment.winmd";
+    private const string WinmdFileName = WinmdBootstrapper.WinmdFileName;
 
     private static readonly Guid PackageManagerClsid = new("C53A4F16-787E-42A4-B304-29EFFB4BF597");
     private static readonly Guid FindPackagesOptionsClsid = new("572DED96-9C60-4526-8F92-EE7D91D38C1A");

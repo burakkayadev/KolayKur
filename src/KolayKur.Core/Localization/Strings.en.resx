@@ -39,6 +39,9 @@
   <data name="Startup_Failed" xml:space="preserve">
     <value>An unexpected error occurred while checking winget. Details are in the log file.</value>
   </data>
+  <data name="Startup_FolderNotWritable" xml:space="preserve">
+    <value>A file KolayKur needs to run could not be written to this folder. Copy KolayKur.exe to a writable folder (for example the Desktop) and run it from there.</value>
+  </data>
   <data name="Close_Confirm" xml:space="preserve">
     <value>Operations are still running. If you close now they may be left unfinished. Do you want to close anyway?</value>
   </data>
