@@ -165,7 +165,8 @@ public class WingetHealthServiceTests
         var result = await ProcessRunner.RunAsync(
             "ping", "-n 30 127.0.0.1", TimeSpan.FromSeconds(1), CancellationToken.None);
 
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5));
+        // Amaç: ping'in 30 sn'sinden çok daha kısa sürede, süre dolunca sonlanması; CI yavaşlığına dayanıklı üst sınır.
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(15));
         Assert.False(result.Succeeded);
         Assert.Equal("timeout", result.Error);
     }

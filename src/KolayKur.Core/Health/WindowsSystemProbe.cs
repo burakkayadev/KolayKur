@@ -13,11 +13,32 @@ namespace KolayKur.Core.Health;
 public sealed class WindowsSystemProbe : ISystemProbe
 {
     private const string AppInstallerName = "Microsoft.DesktopAppInstaller";
-    private const string WingetFile = "winget";
     private const string WingetArguments = "--version";
 
+    private readonly string wingetPath;
+    private readonly Func<string, string, TimeSpan, CancellationToken, Task<ProbeResult>> run;
+
+    public WindowsSystemProbe()
+        : this(WingetLocator.GetPath(), ProcessRunner.RunAsync)
+    {
+    }
+
+    /// <summary>Testler için: winget yolu ve süreç çalıştırıcı dışarıdan verilir.</summary>
+    internal WindowsSystemProbe(
+        string wingetPath, Func<string, string, TimeSpan, CancellationToken, Task<ProbeResult>> run)
+    {
+        this.wingetPath = wingetPath;
+        this.run = run;
+    }
+
+    /// <summary>
+    /// <c>winget --version</c> komutunu tam yoluyla çalıştırır. Dosya yoksa hiçbir süreç başlatılmaz; sonuç başarısız
+    /// döner ve teşhis bunu mevcut yoldan (App Installer yok/bozuk) değerlendirir.
+    /// </summary>
     public Task<ProbeResult> RunWingetVersionAsync(TimeSpan timeout, CancellationToken ct) =>
-        ProcessRunner.RunAsync(WingetFile, WingetArguments, timeout, ct);
+        File.Exists(wingetPath)
+            ? run(wingetPath, WingetArguments, timeout, ct)
+            : Task.FromResult(new ProbeResult(false, "", $"{WingetLocator.FileName} bulunamadı: {wingetPath}"));
 
     public Version? GetAppInstallerVersion() =>
         FindLatest(AppInstallerName)?.Version;
