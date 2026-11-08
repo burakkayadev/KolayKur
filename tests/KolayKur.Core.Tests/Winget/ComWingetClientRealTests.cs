@@ -64,6 +64,60 @@ public class ComWingetClientRealTests
         Assert.Equal(OperationStatus.NotFound, outcome.Status);
     }
 
+    [Fact]
+    public async Task Calls_do_not_post_back_to_caller_context()
+    {
+        var recorder = new RecordingSynchronizationContext();
+
+        var search = await CallWithContext(recorder, () => client.SearchAsync("git", Timeout()));
+        var installed = await CallWithContext(recorder, () => client.GetInstalledAsync(Timeout()));
+
+        Assert.NotEmpty(search);
+        Assert.NotEmpty(installed);
+        Assert.Equal(0, recorder.PostCount);
+    }
+
+    /// <summary>
+    /// <paramref name="call"/> çağrısını <paramref name="context"/> geçerliyken başlatır (eşzamanlı kısım ve
+    /// bekleme sonrası devam bu bağlamı yakalayabilsin diye) ve önceki bağlamı geri koyar.
+    /// </summary>
+    private static async Task<T> CallWithContext<T>(SynchronizationContext context, Func<Task<T>> call)
+    {
+        var previous = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        Task<T> task;
+        try
+        {
+            task = call();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previous);
+        }
+
+        return await task.ConfigureAwait(false);
+    }
+
+    /// <summary>Gönderilen işleri sayar ve hemen çalıştırır (böylece bağlamı yakalayan devamlar takılmaz).</summary>
+    private sealed class RecordingSynchronizationContext : SynchronizationContext
+    {
+        private int postCount;
+
+        public int PostCount => Volatile.Read(ref postCount);
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            Interlocked.Increment(ref postCount);
+            d(state);
+        }
+
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+            Interlocked.Increment(ref postCount);
+            d(state);
+        }
+    }
+
     /// <summary>Makineyi değiştirir. Yalnızca KOLAYKUR_REAL_INSTALL=1 ve 7-Zip yüklü değilken çalışır.</summary>
     [RealInstallFact("7-Zip")]
     public async Task Install_then_uninstall_7zip()

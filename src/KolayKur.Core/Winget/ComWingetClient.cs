@@ -7,62 +7,83 @@ namespace KolayKur.Core.Winget;
 
 /// <summary>
 /// <see cref="IWingetClient"/> uygulaması: winget'in resmi COM arayüzünü kullanır. Bütün COM çağrıları
-/// WinRT eşzamansız işlemlerinin <c>await</c> edilmesiyle yapılır, çağıran iş parçacığı bloke edilmez.
+/// WinRT eşzamansız işlemlerinin <c>await</c> edilmesiyle yapılır. Her genel yöntemin gövdesi
+/// <see cref="Task.Run(Func{Task}, CancellationToken)"/> ile iş parçacığı havuzunda başlar ve her <c>await</c>
+/// <c>ConfigureAwait(false)</c> kullanır: eşzamanlı COM çağrıları (nesne oluşturma, liste okuma) ve devamlar
+/// çağıranın <see cref="SynchronizationContext"/> bağlamında (örn. arayüz iş parçacığı) çalışmaz.
 /// </summary>
 public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
 {
     private const int SearchLimit = 50;
     private const double PercentScale = 100;
 
-    public async Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, CancellationToken ct)
+    public Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, CancellationToken ct) =>
+        Task.Run(() => SearchCoreAsync(query, ct), ct);
+
+    public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct) =>
+        Task.Run(() => GetInstalledCoreAsync(ct), ct);
+
+    public Task<IReadOnlyList<PackageInfo>> GetUpgradesAsync(CancellationToken ct) =>
+        Task.Run(() => GetUpgradesCoreAsync(ct), ct);
+
+    public Task<OperationOutcome> InstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
+        Task.Run(() => InstallCoreAsync(packageId, progress, ct), ct);
+
+    public Task<OperationOutcome> UpgradeAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
+        Task.Run(() => UpgradeCoreAsync(packageId, progress, ct), ct);
+
+    public Task<OperationOutcome> UninstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
+        Task.Run(() => UninstallCoreAsync(packageId, progress, ct), ct);
+
+    private async Task<IReadOnlyList<PackageInfo>> SearchCoreAsync(string query, CancellationToken ct)
     {
         // Yalnızca uzak (winget) paketler döner, ama yüklü katalogla eşleşenlerin InstalledVersion alanı dolar.
         // (RemotePackagesFromRemoteCatalogs ile bu alan boş kalıyordu; elle denenip doğrulandı.)
-        var (_, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.RemotePackagesFromAllCatalogs, ct);
+        var (_, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.RemotePackagesFromAllCatalogs, ct).ConfigureAwait(false);
         var filter = MatchFilter(PackageMatchField.CatalogDefault, PackageFieldMatchOption.ContainsCaseInsensitive, query);
-        var packages = await FindAsync(catalog, filter, SearchLimit, ct);
+        var packages = await FindAsync(catalog, filter, SearchLimit, ct).ConfigureAwait(false);
         return [.. packages.Take(SearchLimit).Select(ToInfo)];
     }
 
-    public async Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct) =>
-        [.. (await FindInstalledAsync(ct)).Select(ToInfo)];
+    private async Task<IReadOnlyList<PackageInfo>> GetInstalledCoreAsync(CancellationToken ct) =>
+        [.. (await FindInstalledAsync(ct).ConfigureAwait(false)).Select(ToInfo)];
 
-    public async Task<IReadOnlyList<PackageInfo>> GetUpgradesAsync(CancellationToken ct) =>
-        [.. (await FindInstalledAsync(ct)).Where(p => p.IsUpdateAvailable).Select(ToInfo)];
+    private async Task<IReadOnlyList<PackageInfo>> GetUpgradesCoreAsync(CancellationToken ct) =>
+        [.. (await FindInstalledAsync(ct).ConfigureAwait(false)).Where(p => p.IsUpdateAvailable).Select(ToInfo)];
 
-    public async Task<OperationOutcome> InstallAsync(
+    private async Task<OperationOutcome> InstallCoreAsync(
         string packageId, IProgress<OperationProgress> progress, CancellationToken ct)
     {
-        var (manager, catalog) = await ConnectRemoteAsync(ct);
-        var package = await FindExactAsync(catalog, packageId, ct);
+        var (manager, catalog) = await ConnectRemoteAsync(ct).ConfigureAwait(false);
+        var package = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
         if (package is null)
         {
             return NotFound(packageId);
         }
 
         var options = CreateInstallOptions();
-        return await RunInstallAsync(() => manager.InstallPackageAsync(package, options), progress, ct);
+        return await RunInstallAsync(() => manager.InstallPackageAsync(package, options), progress, ct).ConfigureAwait(false);
     }
 
-    public async Task<OperationOutcome> UpgradeAsync(
+    private async Task<OperationOutcome> UpgradeCoreAsync(
         string packageId, IProgress<OperationProgress> progress, CancellationToken ct)
     {
-        var (manager, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct);
-        var package = await FindExactAsync(catalog, packageId, ct);
+        var (manager, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
+        var package = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
         if (package?.InstalledVersion is null)
         {
             return NotFound(packageId);
         }
 
         var options = CreateInstallOptions();
-        return await RunInstallAsync(() => manager.UpgradePackageAsync(package, options), progress, ct);
+        return await RunInstallAsync(() => manager.UpgradePackageAsync(package, options), progress, ct).ConfigureAwait(false);
     }
 
-    public async Task<OperationOutcome> UninstallAsync(
+    private async Task<OperationOutcome> UninstallCoreAsync(
         string packageId, IProgress<OperationProgress> progress, CancellationToken ct)
     {
-        var (manager, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct);
-        var package = await FindExactAsync(catalog, packageId, ct);
+        var (manager, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
+        var package = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
         if (package?.InstalledVersion is null)
         {
             return NotFound(packageId);
@@ -73,7 +94,8 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
         try
         {
             var result = await manager.UninstallPackageAsync(package, options)
-                .AsTask(ct, new InlineProgress<UninstallProgress>(p => progress.Report(ToProgress(p))));
+                .AsTask(ct, new InlineProgress<UninstallProgress>(p => progress.Report(ToProgress(p))))
+                .ConfigureAwait(false);
             return WingetOutcomeMapper.MapUninstall(
                 result.Status, HResultOf(result.ExtendedErrorCode), result.UninstallerErrorCode);
         }
@@ -90,7 +112,9 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     {
         try
         {
-            var result = await start().AsTask(ct, new InlineProgress<InstallProgress>(p => progress.Report(ToProgress(p))));
+            var result = await start()
+                .AsTask(ct, new InlineProgress<InstallProgress>(p => progress.Report(ToProgress(p))))
+                .ConfigureAwait(false);
             return WingetOutcomeMapper.MapInstall(
                 result.Status, HResultOf(result.ExtendedErrorCode), result.InstallerErrorCode);
         }
@@ -124,7 +148,7 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
         {
             var manager = factory.CreatePackageManager();
             var remote = manager.GetPredefinedPackageCatalog(PredefinedPackageCatalog.OpenWindowsCatalog);
-            var connect = await select(manager, remote).ConnectAsync().AsTask(ct);
+            var connect = await select(manager, remote).ConnectAsync().AsTask(ct).ConfigureAwait(false);
             return connect.Status == ConnectResultStatus.Ok
                 ? (manager, connect.PackageCatalog)
                 : throw new CatalogUnavailableException($"winget kataloğuna bağlanılamadı: {connect.Status}.");
@@ -138,15 +162,15 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     private async Task<CatalogPackage?> FindExactAsync(PackageCatalog catalog, string packageId, CancellationToken ct)
     {
         var filter = MatchFilter(PackageMatchField.Id, PackageFieldMatchOption.EqualsCaseInsensitive, packageId);
-        var matches = await FindAsync(catalog, filter, 0, ct);
+        var matches = await FindAsync(catalog, filter, 0, ct).ConfigureAwait(false);
         return matches.FirstOrDefault(p => string.Equals(p.Id, packageId, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Yüklü katalogdaki her paket (winget kataloğundaki eşleşmeleriyle birlikte).</summary>
     private async Task<IReadOnlyList<CatalogPackage>> FindInstalledAsync(CancellationToken ct)
     {
-        var (_, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct);
-        return await FindAsync(catalog, null, 0, ct);
+        var (_, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
+        return await FindAsync(catalog, null, 0, ct).ConfigureAwait(false);
     }
 
     private PackageMatchFilter MatchFilter(PackageMatchField field, PackageFieldMatchOption option, string value)
@@ -179,7 +203,7 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
             }
 
             options.ResultLimit = limit;
-            var result = await catalog.FindPackagesAsync(options).AsTask(ct);
+            var result = await catalog.FindPackagesAsync(options).AsTask(ct).ConfigureAwait(false);
             return result.Status == FindPackagesResultStatus.Ok
                 ? PackagesOf(result.Matches)
                 : throw new CatalogUnavailableException($"winget araması başarısız: {result.Status}.");

@@ -5,6 +5,8 @@ namespace KolayKur.Core.Winget;
 /// <summary>
 /// winget ile konuşan istemci. İptal (<c>ct</c>) <see cref="OperationCanceledException"/> olarak yansır.
 /// Kataloğa bağlanılamazsa <see cref="CatalogUnavailableException"/> atılır.
+/// İlerleme bildirimleri iş parçacığı havuzunda/COM geri çağrı iş parçacığında gelir; arayüze dokunan tüketiciler
+/// (örn. işlem sırası) kendileri doğru iş parçacığına geçirmelidir.
 /// </summary>
 public interface IWingetClient
 {
