@@ -180,7 +180,7 @@ public sealed class UpdatesViewModelTests : QueueTestBase
         {
             Loc.Instance.SetLanguage("en");
 
-            Assert.Equal("3 updates available", viewModel.CountText);
+            Assert.Equal("Updates available: 3", viewModel.CountText);
             Assert.Contains(nameof(UpdatesViewModel.CountText), changed);
         }
         finally

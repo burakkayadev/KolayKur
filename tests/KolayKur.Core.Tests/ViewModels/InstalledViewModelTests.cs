@@ -101,7 +101,7 @@ public sealed class InstalledViewModelTests : QueueTestBase
         {
             Loc.Instance.SetLanguage("en");
 
-            Assert.Equal("2 apps", viewModel.CountText);
+            Assert.Equal("Installed apps: 2", viewModel.CountText);
             Assert.Contains(nameof(InstalledViewModel.CountText), changed);
         }
         finally

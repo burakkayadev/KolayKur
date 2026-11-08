@@ -185,7 +185,7 @@ public sealed class SearchViewModelTests : QueueTestBase
 
             Assert.NotEmpty(changed);
             Assert.Equal(string.Format(Loc.Instance["Search_ResultCount"], "git", 2), viewModel.ResultCountText);
-            Assert.Contains("results", viewModel.ResultCountText, StringComparison.Ordinal);
+            Assert.Equal("Results for “git”: 2", viewModel.ResultCountText);
         }
         finally
         {

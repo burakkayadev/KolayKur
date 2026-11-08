@@ -111,11 +111,8 @@
   <data name="Search_Install" xml:space="preserve">
     <value>Install</value>
   </data>
-  <data name="Search_InstallSelected" xml:space="preserve">
-    <value>Install selected</value>
-  </data>
   <data name="Search_ResultCount" xml:space="preserve">
-    <value>{1} results for “{0}”</value>
+    <value>Results for “{0}”: {1}</value>
   </data>
   <data name="Search_InstallSelectedCount" xml:space="preserve">
     <value>Install selected ({0})</value>
@@ -129,21 +126,6 @@
   <data name="Common_Loading" xml:space="preserve">
     <value>Loading...</value>
   </data>
-  <data name="Column_Name" xml:space="preserve">
-    <value>Name</value>
-  </data>
-  <data name="Column_Publisher" xml:space="preserve">
-    <value>Publisher</value>
-  </data>
-  <data name="Column_Version" xml:space="preserve">
-    <value>Version</value>
-  </data>
-  <data name="Column_InstalledVersion" xml:space="preserve">
-    <value>Installed version</value>
-  </data>
-  <data name="Column_NewVersion" xml:space="preserve">
-    <value>New version</value>
-  </data>
   <data name="Updates_Update" xml:space="preserve">
     <value>Update</value>
   </data>
@@ -151,7 +133,7 @@
     <value>Update all</value>
   </data>
   <data name="Updates_Count" xml:space="preserve">
-    <value>{0} updates available</value>
+    <value>Updates available: {0}</value>
   </data>
   <data name="Updates_Empty" xml:space="preserve">
     <value>No apps have updates.</value>
@@ -264,6 +246,9 @@
   <data name="Settings_OpenLog" xml:space="preserve">
     <value>Open log</value>
   </data>
+  <data name="Settings_LogTitle" xml:space="preserve">
+    <value>Log file</value>
+  </data>
   <data name="Settings_RepairNotNeeded" xml:space="preserve">
     <value>Winget is already working, no repair is needed.</value>
   </data>
@@ -340,7 +325,7 @@ Do you want to continue?</value>
     <value>An unexpected error occurred. Details were written to the log file. The program keeps running; if the problem continues, close it and open it again.</value>
   </data>
   <data name="Installed_Count" xml:space="preserve">
-    <value>{0} apps</value>
+    <value>Installed apps: {0}</value>
   </data>
   <data name="Theme_Title" xml:space="preserve">
     <value>Theme</value>

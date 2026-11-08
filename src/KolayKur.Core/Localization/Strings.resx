@@ -111,9 +111,6 @@
   <data name="Search_Install" xml:space="preserve">
     <value>Kur</value>
   </data>
-  <data name="Search_InstallSelected" xml:space="preserve">
-    <value>Seçilenleri kur</value>
-  </data>
   <data name="Search_ResultCount" xml:space="preserve">
     <value>“{0}” için {1} sonuç</value>
   </data>
@@ -128,21 +125,6 @@
   </data>
   <data name="Common_Loading" xml:space="preserve">
     <value>Yükleniyor...</value>
-  </data>
-  <data name="Column_Name" xml:space="preserve">
-    <value>Ad</value>
-  </data>
-  <data name="Column_Publisher" xml:space="preserve">
-    <value>Yayıncı</value>
-  </data>
-  <data name="Column_Version" xml:space="preserve">
-    <value>Sürüm</value>
-  </data>
-  <data name="Column_InstalledVersion" xml:space="preserve">
-    <value>Kurulu sürüm</value>
-  </data>
-  <data name="Column_NewVersion" xml:space="preserve">
-    <value>Yeni sürüm</value>
   </data>
   <data name="Updates_Update" xml:space="preserve">
     <value>Güncelle</value>
@@ -263,6 +245,9 @@
   </data>
   <data name="Settings_OpenLog" xml:space="preserve">
     <value>Günlüğü aç</value>
+  </data>
+  <data name="Settings_LogTitle" xml:space="preserve">
+    <value>Günlük dosyası</value>
   </data>
   <data name="Settings_RepairNotNeeded" xml:space="preserve">
     <value>Winget zaten çalışıyor, onarım gerekmiyor.</value>
