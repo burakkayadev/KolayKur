@@ -1,4 +1,5 @@
 using KolayKur.Core.Health;
+using KolayKur.Core.Models;
 using KolayKur.Core.Repair;
 using KolayKur.Core.Support;
 using KolayKur.Core.Winget;
@@ -41,9 +42,31 @@ if (args.Length == 1 && string.Equals(args[0], "repair", StringComparison.Ordina
     }
 }
 
+if (args.Length == 2 && string.Equals(args[0], "install", StringComparison.OrdinalIgnoreCase))
+{
+    // Dikkat: gerçekten kurar. Var olmayan bir kimlikle denenirse yalnızca NotFound yazar.
+    try
+    {
+        var client = new ComWingetClient(new WingetComFactory());
+        var outcome = await client.InstallAsync(args[1], new ConsoleOperationProgress(), CancellationToken.None);
+        Console.WriteLine($"Sonuç: {outcome.Status}");
+        if (outcome.Message is not null)
+        {
+            Console.WriteLine($"Ayrıntı: {outcome.Message}");
+        }
+
+        return outcome.Status == OperationStatus.Succeeded ? 0 : 1;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex.ToString());
+        return 1;
+    }
+}
+
 if (args.Length < 2 || !string.Equals(args[0], "search", StringComparison.OrdinalIgnoreCase))
 {
-    Console.Error.WriteLine("Kullanım: Probe search <metin> | Probe diagnose | Probe repair");
+    Console.Error.WriteLine("Kullanım: Probe search <metin> | Probe install <kimlik> | Probe diagnose | Probe repair");
     return 2;
 }
 
@@ -93,4 +116,10 @@ catch (Exception ex)
 file sealed class ConsoleProgress : IProgress<string>
 {
     public void Report(string value) => Console.WriteLine(value);
+}
+
+file sealed class ConsoleOperationProgress : IProgress<OperationProgress>
+{
+    public void Report(OperationProgress value) =>
+        Console.WriteLine(FormattableString.Invariant($"{value.Stage}: {value.Percent?.ToString("0") ?? "?"}%"));
 }

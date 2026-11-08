@@ -12,6 +12,10 @@ public sealed partial class WingetComFactory
 {
     private const uint ClsctxLocalServer = 0x4;
 
+    // APPMODEL_ERROR_NO_PACKAGE: winget yoksa da, .winmd dosyası çıktı klasöründe eksikse de bu kodla başarısız olunur.
+    private const int AppModelErrorNoPackage = unchecked((int)0x80073D54);
+    private const string WinmdFileName = "Microsoft.Management.Deployment.winmd";
+
     private static readonly Guid PackageManagerClsid = new("C53A4F16-787E-42A4-B304-29EFFB4BF597");
     private static readonly Guid FindPackagesOptionsClsid = new("572DED96-9C60-4526-8F92-EE7D91D38C1A");
     private static readonly Guid CreateCompositePackageCatalogOptionsClsid = new("526534B8-7E46-47C8-8416-B1685C327D37");
@@ -47,11 +51,39 @@ public sealed partial class WingetComFactory
     public PackageMatchFilter CreateMatchFilter() =>
         Create<PackageMatchFilter>(PackageMatchFilterClsid, PackageMatchFilterIid);
 
+    /// <summary>Winmd eksikse etkinleştirmenin neden başarısız olduğunu açıklayan özel durum; değilse <c>null</c>.</summary>
+    internal static Exception? ExplainActivationFailure(COMException failure, string baseDirectory)
+    {
+        if (failure.HResult != AppModelErrorNoPackage
+            || File.Exists(Path.Combine(baseDirectory, WinmdFileName)))
+        {
+            return null;
+        }
+
+        return new FileNotFoundException(
+            $"{WinmdFileName} dosyası {baseDirectory} klasöründe yok; winget nesneleri bu dosya olmadan oluşturulamaz. "
+            + "Dosya, programın yanına kopyalanmalıdır (winget'in kendisinin eksik olmasından farklı bir sorundur).",
+            failure);
+    }
+
     private static T Create<T>(Guid clsid, Guid iid)
     {
-        var hr = CoCreateInstance(in clsid, IntPtr.Zero, ClsctxLocalServer, in iid, out var instance);
-        Marshal.ThrowExceptionForHR(hr);
-        return MarshalGeneric<T>.FromAbi(instance);
+        try
+        {
+            var hr = CoCreateInstance(in clsid, IntPtr.Zero, ClsctxLocalServer, in iid, out var instance);
+            Marshal.ThrowExceptionForHR(hr);
+            return MarshalGeneric<T>.FromAbi(instance);
+        }
+        catch (COMException ex)
+        {
+            var explained = ExplainActivationFailure(ex, AppContext.BaseDirectory);
+            if (explained is null)
+            {
+                throw;
+            }
+
+            throw explained;
+        }
     }
 
     [LibraryImport("api-ms-win-core-com-l1-1-0.dll")]

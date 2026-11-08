@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using KolayKur.Core.Winget;
 using Microsoft.Management.Deployment;
 
@@ -24,5 +25,49 @@ public class WingetComFactoryTests
 
         Assert.NotNull(type);
         Assert.Equal(expected, type.GUID);
+    }
+
+    private const int AppModelErrorNoPackage = unchecked((int)0x80073D54);
+
+    [Fact]
+    public void Missing_winmd_is_reported_by_name_when_activation_fails_with_no_package()
+    {
+        var directory = Directory.CreateTempSubdirectory("kolaykur-winmd-").FullName;
+        try
+        {
+            var failure = new COMException("QueryInterface", AppModelErrorNoPackage);
+
+            var explained = WingetComFactory.ExplainActivationFailure(failure, directory);
+
+            Assert.NotNull(explained);
+            Assert.Contains("Microsoft.Management.Deployment.winmd", explained.Message);
+            Assert.Same(failure, explained.InnerException);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Present_winmd_or_other_error_is_not_explained()
+    {
+        var directory = Directory.CreateTempSubdirectory("kolaykur-winmd-").FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(directory, "Microsoft.Management.Deployment.winmd"), "");
+
+            var winmdPresent = WingetComFactory.ExplainActivationFailure(
+                new COMException("QueryInterface", AppModelErrorNoPackage), directory);
+            var otherError = WingetComFactory.ExplainActivationFailure(
+                new COMException("other", unchecked((int)0x80004005)), Path.Combine(directory, "yok"));
+
+            Assert.Null(winmdPresent);
+            Assert.Null(otherError);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 }
