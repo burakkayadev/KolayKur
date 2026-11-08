@@ -22,12 +22,12 @@ public partial class App : Application
         MainWindow? window = null;
         try
         {
-            var shell = Compose(dialogs);
-            window = new MainWindow(shell);
+            var app = Compose(dialogs);
+            window = new MainWindow(app.Shell, app.Search, app.Updates, app.Operations);
             MainWindow = window;
             window.Show();
 
-            await shell.StartAsync(CancellationToken.None);
+            await app.Shell.StartAsync(CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -44,20 +44,36 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Nesnelerin tek kurulum yeri. <see cref="OperationQueue"/> arayüz iş parçacığında kurulmalıdır.</summary>
-    private ShellViewModel Compose(IDialogService dialogs)
+    /// <summary>
+    /// Nesnelerin tek kurulum yeri. <see cref="OperationQueue"/> ve ona abone olan ViewModel'ler arayüz iş
+    /// parçacığında kurulmalıdır (kuyruk olaylarını kurulduğu bağlamda tetikler).
+    /// </summary>
+    private Composition Compose(IDialogService dialogs)
     {
         var fileLog = log = new FileLog(AppPaths.Logs);
         var health = new WingetHealthService(new WindowsSystemProbe());
         var repair = new WingetRepairService(new WindowsRepairActions(), health, fileLog);
-        var queue = new OperationQueue(new ComWingetClient(new WingetComFactory()), fileLog);
+        var client = new ComWingetClient(new WingetComFactory());
+        var queue = new OperationQueue(client, fileLog);
 
-        return new ShellViewModel(
+        var shell = new ShellViewModel(
             health,
             queue,
             dialogs,
             AppPaths.SettingsFile,
             diagnosis => new RepairViewModel(repair, diagnosis, fileLog),
             fileLog);
+
+        return new Composition(
+            shell,
+            new SearchViewModel(client, queue),
+            new UpdatesViewModel(client, queue),
+            new OperationListViewModel(queue));
     }
+
+    private sealed record Composition(
+        ShellViewModel Shell,
+        SearchViewModel Search,
+        UpdatesViewModel Updates,
+        OperationListViewModel Operations);
 }

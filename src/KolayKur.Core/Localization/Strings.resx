@@ -81,4 +81,106 @@
   <data name="Dialog_ListFilter" xml:space="preserve">
     <value>Paket listesi (*.json)|*.json</value>
   </data>
+  <data name="Search_Prompt" xml:space="preserve">
+    <value>Kurmak istediğiniz uygulamanın adını yazın</value>
+  </data>
+  <data name="Search_Action" xml:space="preserve">
+    <value>Ara</value>
+  </data>
+  <data name="Search_Install" xml:space="preserve">
+    <value>Kur</value>
+  </data>
+  <data name="Search_InstallSelected" xml:space="preserve">
+    <value>Seçilenleri kur</value>
+  </data>
+  <data name="Search_Empty" xml:space="preserve">
+    <value>Sonuç yok. Bir uygulama adı yazıp Enter'a basın.</value>
+  </data>
+  <data name="Common_Loading" xml:space="preserve">
+    <value>Yükleniyor...</value>
+  </data>
+  <data name="Column_Name" xml:space="preserve">
+    <value>Ad</value>
+  </data>
+  <data name="Column_Publisher" xml:space="preserve">
+    <value>Yayıncı</value>
+  </data>
+  <data name="Column_Version" xml:space="preserve">
+    <value>Sürüm</value>
+  </data>
+  <data name="Column_InstalledVersion" xml:space="preserve">
+    <value>Kurulu sürüm</value>
+  </data>
+  <data name="Column_NewVersion" xml:space="preserve">
+    <value>Yeni sürüm</value>
+  </data>
+  <data name="Updates_Update" xml:space="preserve">
+    <value>Güncelle</value>
+  </data>
+  <data name="Updates_UpdateAll" xml:space="preserve">
+    <value>Tümünü güncelle</value>
+  </data>
+  <data name="Updates_Empty" xml:space="preserve">
+    <value>Güncellemesi olan uygulama yok.</value>
+  </data>
+  <data name="Error_NoInternet" xml:space="preserve">
+    <value>İnternet bağlantısı yok. Bağlantınızı kontrol edip tekrar deneyin.</value>
+  </data>
+  <data name="Error_Generic" xml:space="preserve">
+    <value>Beklenmeyen bir hata oluştu. Biraz sonra tekrar deneyin.</value>
+  </data>
+  <data name="Error_Retry" xml:space="preserve">
+    <value>Tekrar dene</value>
+  </data>
+  <data name="OperationList_Summary" xml:space="preserve">
+    <value>{0} başarılı, {1} başarısız, {2} iptal, {3} bulunamadı</value>
+  </data>
+  <data name="Operation_Status_Queued" xml:space="preserve">
+    <value>Sırada</value>
+  </data>
+  <data name="Operation_Status_Running" xml:space="preserve">
+    <value>Çalışıyor</value>
+  </data>
+  <data name="Operation_Status_Succeeded" xml:space="preserve">
+    <value>Başarılı</value>
+  </data>
+  <data name="Operation_Status_Failed" xml:space="preserve">
+    <value>Başarısız</value>
+  </data>
+  <data name="Operation_Status_Cancelled" xml:space="preserve">
+    <value>İptal edildi</value>
+  </data>
+  <data name="Operation_Status_NotFound" xml:space="preserve">
+    <value>Bulunamadı</value>
+  </data>
+  <data name="Operation_Kind_Install" xml:space="preserve">
+    <value>Kurulum</value>
+  </data>
+  <data name="Operation_Kind_Upgrade" xml:space="preserve">
+    <value>Güncelleme</value>
+  </data>
+  <data name="Operation_Kind_Uninstall" xml:space="preserve">
+    <value>Kaldırma</value>
+  </data>
+  <data name="Stage_queued" xml:space="preserve">
+    <value>Sırada</value>
+  </data>
+  <data name="Stage_downloading" xml:space="preserve">
+    <value>İndiriliyor</value>
+  </data>
+  <data name="Stage_installing" xml:space="preserve">
+    <value>Kuruluyor</value>
+  </data>
+  <data name="Stage_postInstall" xml:space="preserve">
+    <value>Kurulum tamamlanıyor</value>
+  </data>
+  <data name="Stage_uninstalling" xml:space="preserve">
+    <value>Kaldırılıyor</value>
+  </data>
+  <data name="Stage_postUninstall" xml:space="preserve">
+    <value>Kaldırma tamamlanıyor</value>
+  </data>
+  <data name="Stage_finished" xml:space="preserve">
+    <value>Bitti</value>
+  </data>
 </root>

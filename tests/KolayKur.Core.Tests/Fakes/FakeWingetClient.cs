@@ -13,7 +13,10 @@ public sealed class FakeWingetClient : IWingetClient
 {
     private readonly ConcurrentDictionary<string, OperationOutcome> outcomes = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, FakeGate> gates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, FakeGate> searchGates = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentQueue<FakeCall> calls = new();
+    private readonly ConcurrentQueue<FakeSearchCall> searchCalls = new();
+    private int upgradeListCalls;
     private int running;
     private int maxConcurrent;
 
@@ -33,6 +36,12 @@ public sealed class FakeWingetClient : IWingetClient
     /// <summary>İşlemlerin başlama sırası.</summary>
     public IReadOnlyList<FakeCall> Calls => [.. calls];
 
+    /// <summary><see cref="SearchAsync"/> çağrıları (sorgu ve iptal belirteciyle), başlama sırasıyla.</summary>
+    public IReadOnlyList<FakeSearchCall> SearchCalls => [.. searchCalls];
+
+    /// <summary><see cref="GetUpgradesAsync"/> kaç kez çağrıldı.</summary>
+    public int UpgradeListCalls => Volatile.Read(ref upgradeListCalls);
+
     /// <summary>Aynı anda çalışan işlem sayısının görülen en yüksek değeri.</summary>
     public int MaxConcurrent => Volatile.Read(ref maxConcurrent);
 
@@ -45,14 +54,33 @@ public sealed class FakeWingetClient : IWingetClient
     /// </summary>
     public FakeGate Hold(string packageId) => gates.GetOrAdd(packageId, _ => new FakeGate());
 
-    public Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, CancellationToken ct) =>
-        List(Catalog.Where(p =>
+    /// <summary>
+    /// Verilen sorgunun aramasını <see cref="FakeGate.Release"/> çağrılana kadar bekletir. Bekleme iptal belirtecini
+    /// bilerek yok sayar: iptali önemsemeyen en kötü durumdaki istemci, eski aramanın yeni aramadan sonra bitmesini sağlar.
+    /// </summary>
+    public FakeGate HoldSearch(string query) => searchGates.GetOrAdd(query, _ => new FakeGate());
+
+    public async Task<IReadOnlyList<PackageInfo>> SearchAsync(string query, CancellationToken ct)
+    {
+        searchCalls.Enqueue(new FakeSearchCall(query, ct));
+        if (searchGates.TryGetValue(query, out var gate))
+        {
+            gate.MarkStarted();
+            await gate.Released;
+        }
+
+        return await List(Catalog.Where(p =>
             p.Id.Contains(query, StringComparison.OrdinalIgnoreCase)
             || p.Name.Contains(query, StringComparison.OrdinalIgnoreCase)));
+    }
 
     public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct) => List(Installed);
 
-    public Task<IReadOnlyList<PackageInfo>> GetUpgradesAsync(CancellationToken ct) => List(Upgrades);
+    public Task<IReadOnlyList<PackageInfo>> GetUpgradesAsync(CancellationToken ct)
+    {
+        Interlocked.Increment(ref upgradeListCalls);
+        return List(Upgrades);
+    }
 
     public Task<OperationOutcome> InstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
         RunAsync(OperationKind.Install, packageId, ProgressStage.Installing, progress, ct);
@@ -108,6 +136,8 @@ public sealed class FakeWingetClient : IWingetClient
 }
 
 public sealed record FakeCall(OperationKind Kind, string PackageId);
+
+public sealed record FakeSearchCall(string Query, CancellationToken Token);
 
 /// <summary><see cref="FakeWingetClient.Hold"/> ile alınan bekletme kapısı.</summary>
 public sealed class FakeGate

@@ -81,4 +81,106 @@
   <data name="Dialog_ListFilter" xml:space="preserve">
     <value>Package list (*.json)|*.json</value>
   </data>
+  <data name="Search_Prompt" xml:space="preserve">
+    <value>Type the name of the app you want to install</value>
+  </data>
+  <data name="Search_Action" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Search_Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Search_InstallSelected" xml:space="preserve">
+    <value>Install selected</value>
+  </data>
+  <data name="Search_Empty" xml:space="preserve">
+    <value>No results. Type an app name and press Enter.</value>
+  </data>
+  <data name="Common_Loading" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="Column_Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Column_Publisher" xml:space="preserve">
+    <value>Publisher</value>
+  </data>
+  <data name="Column_Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="Column_InstalledVersion" xml:space="preserve">
+    <value>Installed version</value>
+  </data>
+  <data name="Column_NewVersion" xml:space="preserve">
+    <value>New version</value>
+  </data>
+  <data name="Updates_Update" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="Updates_UpdateAll" xml:space="preserve">
+    <value>Update all</value>
+  </data>
+  <data name="Updates_Empty" xml:space="preserve">
+    <value>No apps have updates.</value>
+  </data>
+  <data name="Error_NoInternet" xml:space="preserve">
+    <value>No internet connection. Check your connection and try again.</value>
+  </data>
+  <data name="Error_Generic" xml:space="preserve">
+    <value>An unexpected error occurred. Try again in a moment.</value>
+  </data>
+  <data name="Error_Retry" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="OperationList_Summary" xml:space="preserve">
+    <value>{0} succeeded, {1} failed, {2} cancelled, {3} not found</value>
+  </data>
+  <data name="Operation_Status_Queued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="Operation_Status_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Operation_Status_Succeeded" xml:space="preserve">
+    <value>Succeeded</value>
+  </data>
+  <data name="Operation_Status_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Operation_Status_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Operation_Status_NotFound" xml:space="preserve">
+    <value>Not found</value>
+  </data>
+  <data name="Operation_Kind_Install" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Operation_Kind_Upgrade" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="Operation_Kind_Uninstall" xml:space="preserve">
+    <value>Uninstall</value>
+  </data>
+  <data name="Stage_queued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="Stage_downloading" xml:space="preserve">
+    <value>Downloading</value>
+  </data>
+  <data name="Stage_installing" xml:space="preserve">
+    <value>Installing</value>
+  </data>
+  <data name="Stage_postInstall" xml:space="preserve">
+    <value>Finishing installation</value>
+  </data>
+  <data name="Stage_uninstalling" xml:space="preserve">
+    <value>Uninstalling</value>
+  </data>
+  <data name="Stage_postUninstall" xml:space="preserve">
+    <value>Finishing removal</value>
+  </data>
+  <data name="Stage_finished" xml:space="preserve">
+    <value>Done</value>
+  </data>
 </root>

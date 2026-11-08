@@ -1,0 +1,36 @@
+<UserControl x:Class="KolayKur.App.Views.ErrorBanner"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:app="clr-namespace:KolayKur.App"
+             xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core"
+             x:Name="Root">
+    <!-- Hata metni anahtarı (ErrorKey) ve "Tekrar dene" komutu (RetryCommand) sayfadan bağlanır; anahtar boşsa gizlenir. -->
+    <UserControl.Resources>
+        <app:LocKeyConverter x:Key="LocKey" />
+    </UserControl.Resources>
+    <UserControl.Style>
+        <Style TargetType="UserControl">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ErrorKey, ElementName=Root}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Style>
+
+    <Border Padding="12,8" BorderBrush="Firebrick" BorderThickness="1" CornerRadius="4">
+        <DockPanel LastChildFill="True">
+            <Button DockPanel.Dock="Right" Margin="12,0,0,0" Padding="16,4" VerticalAlignment="Center"
+                    Command="{Binding RetryCommand, ElementName=Root}"
+                    Content="{Binding [Error_Retry], Source={x:Static loc:Loc.Instance}}" />
+            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" Foreground="Firebrick">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource LocKey}">
+                        <Binding Path="ErrorKey" ElementName="Root" />
+                        <Binding Path="Language" Source="{x:Static loc:Loc.Instance}" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </DockPanel>
+    </Border>
+</UserControl>
