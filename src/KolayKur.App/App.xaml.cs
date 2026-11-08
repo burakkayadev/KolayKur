@@ -46,6 +46,10 @@ public partial class App : Application
             MainWindow = window;
             window.Show();
 
+            // Winget sağlıklı olunca güncelleme listesi arka planda yüklenir (menü rozeti için); hata iletişim kutusu açmaz,
+            // LoadAsync hatayı kendi içinde ErrorKey ve günlüğe işler.
+            app.Shell.BecameHealthy += (_, _) => _ = app.Updates.LoadCommand.ExecuteAsync(null);
+
             await app.Shell.StartAsync(CancellationToken.None);
         }
         catch (Exception ex)

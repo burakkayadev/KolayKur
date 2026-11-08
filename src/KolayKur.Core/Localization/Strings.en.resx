@@ -150,6 +150,9 @@
   <data name="Updates_UpdateAll" xml:space="preserve">
     <value>Update all</value>
   </data>
+  <data name="Updates_Count" xml:space="preserve">
+    <value>{0} updates available</value>
+  </data>
   <data name="Updates_Empty" xml:space="preserve">
     <value>No apps have updates.</value>
   </data>

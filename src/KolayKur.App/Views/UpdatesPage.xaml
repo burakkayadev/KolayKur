@@ -1,14 +1,13 @@
 <UserControl x:Class="KolayKur.App.Views.UpdatesPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:views="clr-namespace:KolayKur.App.Views"
              xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core">
-    <!-- DataContext: UpdatesViewModel (ana pencere atar). Sayfa görünür olunca liste yüklenir (kod arkası). -->
+    <!-- DataContext: UpdatesViewModel (ana pencere atar). Sayfa görünür olunca liste yüklenir (kod arkası). Renkler yalnız DynamicResource ile Themes sözlüklerinden gelir. -->
     <UserControl.Resources>
-        <Style x:Key="EmptyTextStyle" TargetType="TextBlock">
-            <Setter Property="Margin" Value="0,12,0,0" />
-            <Setter Property="Foreground" Value="Gray" />
-            <Setter Property="TextWrapping" Value="Wrap" />
+        <!-- Güncelleme yok, hata yok, yükleme yok: bilgi metni. -->
+        <Style x:Key="EmptyStateStyle" TargetType="StackPanel">
             <Setter Property="Visibility" Value="Collapsed" />
             <Style.Triggers>
                 <MultiDataTrigger>
@@ -21,71 +20,120 @@
                 </MultiDataTrigger>
             </Style.Triggers>
         </Style>
+
+        <DataTemplate x:Key="UpdateCardTemplate">
+            <Border Style="{StaticResource AppCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <views:PackageAvatarView Grid.Row="0" Grid.Column="0" VerticalAlignment="Top"
+                                             PackageId="{Binding Id}" PackageName="{Binding Name}" />
+
+                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,0,0">
+                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   ToolTip="{Binding Name}" />
+                        <TextBlock Text="{Binding Publisher}" Style="{StaticResource SecondaryTextStyle}"
+                                   Margin="0,2,0,0" ToolTip="{Binding Publisher}" />
+                        <TextBlock Text="{Binding Id}" Style="{StaticResource SecondaryTextStyle}"
+                                   FontSize="11" Opacity="0.8" ToolTip="{Binding Id}" />
+                    </StackPanel>
+
+                    <!-- Sürüm değişimi: yüklü sürüm çipi, ok, vurgu tonlu yeni sürüm çipi (dar kartta kısalır); altında ikincil "Güncelle". -->
+                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource VersionChipStyle}" MaxWidth="80">
+                            <TextBlock Text="{Binding InstalledVersion}" Style="{StaticResource SecondaryTextStyle}"
+                                       ToolTip="{Binding InstalledVersion}" />
+                        </Border>
+                        <ui:SymbolIcon Grid.Column="1" Symbol="ArrowRight16" FontSize="14" Margin="6,0"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <Grid Grid.Column="2" MaxWidth="80">
+                            <Border CornerRadius="4" Opacity="0.15" Background="{DynamicResource BrandAccentBrush}" />
+                            <Border CornerRadius="4" BorderThickness="1" Padding="6,1"
+                                    BorderBrush="{DynamicResource BrandAccentBrush}">
+                                <TextBlock Text="{Binding AvailableVersion}" FontSize="12" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource BrandAccentBrush}"
+                                           ToolTip="{Binding AvailableVersion}" />
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <ui:Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,12,0,0" Padding="16,4"
+                               HorizontalAlignment="Stretch" Appearance="Secondary"
+                               Command="{Binding DataContext.UpgradeCommand, RelativeSource={RelativeSource AncestorType=views:UpdatesPage}}"
+                               CommandParameter="{Binding}"
+                               Content="{Binding [Updates_Update], Source={x:Static loc:Loc.Instance}}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" FontSize="26" FontWeight="SemiBold"
+        <TextBlock Grid.Row="0" Style="{StaticResource PageTitleTextStyle}"
                    Text="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
 
-        <views:ErrorInfoBar Grid.Row="1" Margin="0,16,0,0"
-                           ErrorKey="{Binding ErrorKey}" ShowRetry="True" RetryCommand="{Binding LoadCommand}" />
-
-        <Grid Grid.Row="2" Margin="0,12,0,0">
-            <ListView ItemsSource="{Binding Updates}" HorizontalContentAlignment="Stretch">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn Width="280" Header="{Binding [Column_Name], Source={x:Static loc:Loc.Instance}}">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"
-                                               ToolTip="{Binding Id}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="130" Header="{Binding [Column_InstalledVersion], Source={x:Static loc:Loc.Instance}}">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding InstalledVersion}" TextTrimming="CharacterEllipsis" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="130" Header="{Binding [Column_NewVersion], Source={x:Static loc:Loc.Instance}}">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding AvailableVersion}" TextTrimming="CharacterEllipsis" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Width="110">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Padding="14,2"
-                                            Command="{Binding DataContext.UpgradeCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
-                                            CommandParameter="{Binding}"
-                                            Content="{Binding [Updates_Update], Source={x:Static loc:Loc.Instance}}" />
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-
-            <TextBlock Style="{StaticResource EmptyTextStyle}" VerticalAlignment="Top"
-                       Text="{Binding [Updates_Empty], Source={x:Static loc:Loc.Instance}}" />
-            <TextBlock Margin="0,12,0,0" VerticalAlignment="Top" Foreground="Gray"
-                       Text="{Binding [Common_Loading], Source={x:Static loc:Loc.Instance}}"
-                       Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
+        <Grid Grid.Row="1" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource SecondaryTextStyle}"
+                       FontSize="14" Text="{Binding CountText}" />
+            <ui:Button Grid.Column="1" Margin="12,0,0,0" Padding="20,6" Appearance="Primary"
+                       IsEnabled="{Binding HasUpdates}"
+                       Command="{Binding UpgradeAllCommand}"
+                       Content="{Binding [Updates_UpdateAll], Source={x:Static loc:Loc.Instance}}" />
         </Grid>
 
-        <Button Grid.Row="3" Margin="0,12,0,0" Padding="20,6" HorizontalAlignment="Left"
-                Command="{Binding UpgradeAllCommand}"
-                Content="{Binding [Updates_UpdateAll], Source={x:Static loc:Loc.Instance}}" />
+        <views:ErrorInfoBar Grid.Row="2" Margin="0,12,0,0"
+                            ErrorKey="{Binding ErrorKey}" ShowRetry="True" RetryCommand="{Binding LoadCommand}" />
+
+        <Grid Grid.Row="3" Margin="0,12,0,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Updates}" ItemTemplate="{StaticResource UpdateCardTemplate}"
+                              Style="{StaticResource CardGridItemsControlStyle}" />
+            </ScrollViewer>
+
+            <StackPanel Style="{StaticResource EmptyStateStyle}" VerticalAlignment="Top" Margin="0,24,0,0">
+                <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="32" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center" TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="{Binding [Updates_Empty], Source={x:Static loc:Loc.Instance}}" />
+            </StackPanel>
+
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,24,0,0"
+                        Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" />
+                <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Text="{Binding [Common_Loading], Source={x:Static loc:Loc.Instance}}" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

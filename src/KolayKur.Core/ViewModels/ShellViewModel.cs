@@ -47,6 +47,12 @@ public sealed partial class ShellViewModel(
     /// </summary>
     public string WingetVersion => Diagnosis is { State: WingetState.Healthy } healthy ? healthy.Detail.TrimStart('v') : string.Empty;
 
+    /// <summary>
+    /// <see cref="Diagnosis"/> önceki değeri <c>null</c> ya da sağlıksızken sağlıklı bir değere geçince, çağıranın
+    /// bağlamında bir kez tetiklenir (sağlıklıdan sağlıklıya geçişte tetiklenmez).
+    /// </summary>
+    public event EventHandler? BecameHealthy;
+
     /// <summary>Denetim sürerken ve onarım sayfası açıkken menü kullanılamaz.</summary>
     public bool IsMenuEnabled => !IsChecking && CurrentPage != ShellPage.Repair;
 
@@ -108,9 +114,27 @@ public sealed partial class ShellViewModel(
 
     private void SetDiagnosis(WingetDiagnosis? value)
     {
+        var wasHealthy = diagnosis is { State: WingetState.Healthy };
         if (SetProperty(ref diagnosis, value, nameof(Diagnosis)))
         {
             OnPropertyChanged(nameof(WingetVersion));
+            if (!wasHealthy && value is { State: WingetState.Healthy })
+            {
+                RaiseBecameHealthy();
+            }
+        }
+    }
+
+    // Durum ayarlandıktan sonra çağrılır; dinleyici hatası tanıyı bozmaz, günlüğe yazılır.
+    private void RaiseBecameHealthy()
+    {
+        try
+        {
+            BecameHealthy?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            log.TryError("BecameHealthy dinleyicisi hata verdi.", ex);
         }
     }
 

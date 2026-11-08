@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KolayKur.Core.Localization;
 using KolayKur.Core.Models;
 using KolayKur.Core.Queue;
 using KolayKur.Core.Support;
@@ -34,9 +35,19 @@ public sealed partial class UpdatesViewModel : ObservableObject
         this.queue = queue;
         this.log = log;
         queue.BatchCompleted += OnBatchCompleted;
+        Updates.CollectionChanged += (_, _) => OnCountChanged();
+        Loc.Instance.WhenLanguageChanges(this, static self => self.OnPropertyChanged(nameof(CountText)));
     }
 
     public ObservableCollection<PackageInfo> Updates { get; } = [];
+
+    /// <summary>Listedeki güncelleme sayısı; başarısız yüklemede 0.</summary>
+    public int UpdateCount => Updates.Count;
+
+    public bool HasUpdates => UpdateCount > 0;
+
+    /// <summary>"3 güncelleme var"; güncelleme yoksa <c>null</c>. Dil değişince yenilenir.</summary>
+    public string? CountText => HasUpdates ? string.Format(Loc.Instance["Updates_Count"], UpdateCount) : null;
 
     /// <summary>Listeyi yükler; hata sonrası "Tekrar dene" de bu komuttur.</summary>
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -103,6 +114,13 @@ public sealed partial class UpdatesViewModel : ObservableObject
 
     // Olay arayüz bağlamında gelir, yükleme doğrudan başlatılabilir. LoadAsync tüm hataları kendi içinde ele alır.
     private void OnBatchCompleted(object? sender, BatchSummary summary) => _ = LoadCommand.ExecuteAsync(null);
+
+    private void OnCountChanged()
+    {
+        OnPropertyChanged(nameof(UpdateCount));
+        OnPropertyChanged(nameof(HasUpdates));
+        OnPropertyChanged(nameof(CountText));
+    }
 
     private bool IsCurrent(CancellationTokenSource load) => ReferenceEquals(currentLoad, load);
 

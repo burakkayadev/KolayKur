@@ -150,6 +150,9 @@
   <data name="Updates_UpdateAll" xml:space="preserve">
     <value>Tümünü güncelle</value>
   </data>
+  <data name="Updates_Count" xml:space="preserve">
+    <value>{0} güncelleme var</value>
+  </data>
   <data name="Updates_Empty" xml:space="preserve">
     <value>Güncellemesi olan uygulama yok.</value>
   </data>

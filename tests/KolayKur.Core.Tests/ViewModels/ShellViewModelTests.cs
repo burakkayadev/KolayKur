@@ -242,6 +242,73 @@ public sealed class ShellViewModelTests : IDisposable
         Assert.Equal(WingetState.Healthy, shell.Diagnosis?.State);
     }
 
+    [Fact]
+    public async Task Became_healthy_raised_once_on_healthy_start()
+    {
+        var shell = CreateShell(new FakeSystemProbe());
+        var raised = 0;
+        shell.BecameHealthy += (_, _) => raised++;
+
+        await shell.StartAsync(CancellationToken.None);
+
+        Assert.Equal(1, raised);
+    }
+
+    [Fact]
+    public async Task Became_healthy_not_raised_when_start_is_broken()
+    {
+        var shell = CreateShell(NotInstalledProbe);
+        var raised = 0;
+        shell.BecameHealthy += (_, _) => raised++;
+
+        await shell.StartAsync(CancellationToken.None);
+
+        Assert.Equal(0, raised);
+    }
+
+    [Fact]
+    public async Task Became_healthy_raised_after_successful_repair()
+    {
+        var probe = new TogglingProbe();
+        var repair = new WingetRepairService(new FakeRepairActions(), new WingetHealthService(probe), Log);
+        var shell = CreateShell(probe, createRepair: d => new RepairViewModel(repair, d, Log));
+        var raised = 0;
+        shell.BecameHealthy += (_, _) => raised++;
+        await shell.StartAsync(CancellationToken.None);
+        Assert.Equal(0, raised);
+
+        probe.Working = true;
+        await shell.Repair!.RepairCommand.ExecuteAsync(null);
+        await WaitUntilAsync(() => shell.CurrentPage == ShellPage.Search);
+
+        Assert.Equal(1, raised);
+    }
+
+    [Fact]
+    public async Task Healthy_recheck_does_not_raise_again()
+    {
+        var shell = CreateShell(new FakeSystemProbe());
+        var raised = 0;
+        shell.BecameHealthy += (_, _) => raised++;
+        await shell.StartAsync(CancellationToken.None);
+
+        await shell.RecheckAsync(CancellationToken.None);
+
+        Assert.Equal(1, raised);
+    }
+
+    [Fact]
+    public async Task Became_healthy_handler_failure_does_not_break_diagnosis()
+    {
+        var shell = CreateShell(new FakeSystemProbe());
+        shell.BecameHealthy += (_, _) => throw new InvalidOperationException("dinleyici patladı");
+
+        await shell.StartAsync(CancellationToken.None);
+
+        Assert.Equal(WingetState.Healthy, shell.Diagnosis?.State);
+        Assert.False(shell.IsChecking);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         using var cts = new CancellationTokenSource(Timeout);

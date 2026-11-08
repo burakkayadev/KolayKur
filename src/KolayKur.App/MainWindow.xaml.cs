@@ -23,6 +23,7 @@ public partial class MainWindow : FluentWindow
         // Sayfaların kendi ViewModel'i vardır; kabuk yalnızca hangisinin görüneceğini seçer.
         searchPage.DataContext = search;
         updatesPage.DataContext = updates;
+        updatesBadge.DataContext = updates;
         installedPage.DataContext = installed;
         settingsPage.DataContext = settings;
         operationsPane.DataContext = operations;

@@ -1,3 +1,4 @@
+using KolayKur.Core.Localization;
 using KolayKur.Core.Models;
 using KolayKur.Core.Tests.Fakes;
 using KolayKur.Core.ViewModels;
@@ -5,6 +6,8 @@ using KolayKur.Core.Winget;
 
 namespace KolayKur.Core.Tests.ViewModels;
 
+// CountText dili Loc.Instance üzerinden okuduğu için dil testleriyle aynı koleksiyonda çalışır.
+[Collection("Localization")]
 public sealed class UpdatesViewModelTests : QueueTestBase
 {
     private readonly FakeWingetClient client = new()
@@ -134,6 +137,56 @@ public sealed class UpdatesViewModelTests : QueueTestBase
 
         // Assert
         Assert.Equal("Error_Generic", viewModel.ErrorKey);
+    }
+
+    [Fact]
+    public async Task Update_count_follows_loaded_list()
+    {
+        var viewModel = new UpdatesViewModel(client, CreateQueue(client));
+        Assert.Equal(0, viewModel.UpdateCount);
+        Assert.False(viewModel.HasUpdates);
+        Assert.Null(viewModel.CountText);
+
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal(3, viewModel.UpdateCount);
+        Assert.True(viewModel.HasUpdates);
+        Assert.Equal(string.Format(Loc.Instance["Updates_Count"], 3), viewModel.CountText);
+    }
+
+    [Fact]
+    public async Task Failed_load_hides_badge()
+    {
+        var viewModel = new UpdatesViewModel(client, CreateQueue(client));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        client.ListException = new CatalogUnavailableException("çevrimdışı");
+
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, viewModel.UpdateCount);
+        Assert.False(viewModel.HasUpdates);
+        Assert.Null(viewModel.CountText);
+    }
+
+    [Fact]
+    public async Task Count_text_follows_language()
+    {
+        var viewModel = new UpdatesViewModel(client, CreateQueue(client));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        try
+        {
+            Loc.Instance.SetLanguage("en");
+
+            Assert.Equal("3 updates available", viewModel.CountText);
+            Assert.Contains(nameof(UpdatesViewModel.CountText), changed);
+        }
+        finally
+        {
+            Loc.Instance.SetLanguage("tr");
+        }
     }
 
     /// <summary>Her <c>GetUpgradesAsync</c> çağrısı, test tamamlayana kadar bekler.</summary>
