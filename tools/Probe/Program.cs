@@ -1,4 +1,6 @@
 using KolayKur.Core.Health;
+using KolayKur.Core.Repair;
+using KolayKur.Core.Support;
 using KolayKur.Core.Winget;
 using Microsoft.Management.Deployment;
 
@@ -17,9 +19,31 @@ if (args.Length == 1 && string.Equals(args[0], "diagnose", StringComparison.Ordi
     return 0;
 }
 
+if (args.Length == 1 && string.Equals(args[0], "repair", StringComparison.OrdinalIgnoreCase))
+{
+    try
+    {
+        var health = new WingetHealthService(new WindowsSystemProbe());
+        var before = await health.DiagnoseAsync(CancellationToken.None);
+        Console.WriteLine($"Before: {before.State}");
+
+        var repair = new WingetRepairService(
+            new WindowsRepairActions(), health, new FileLog(AppPaths.Logs));
+        var after = await repair.RepairAsync(before, new ConsoleProgress(), CancellationToken.None);
+        Console.WriteLine($"After: {after.State}");
+        Console.WriteLine($"Detail: {after.Detail}");
+        return after.State == WingetState.Healthy ? 0 : 1;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(ex.ToString());
+        return 1;
+    }
+}
+
 if (args.Length < 2 || !string.Equals(args[0], "search", StringComparison.OrdinalIgnoreCase))
 {
-    Console.Error.WriteLine("Kullanım: Probe search <metin> | Probe diagnose");
+    Console.Error.WriteLine("Kullanım: Probe search <metin> | Probe diagnose | Probe repair");
     return 2;
 }
 
@@ -64,4 +88,9 @@ catch (Exception ex)
 {
     Console.Error.WriteLine(ex.ToString());
     return 1;
+}
+
+file sealed class ConsoleProgress : IProgress<string>
+{
+    public void Report(string value) => Console.WriteLine(value);
 }
