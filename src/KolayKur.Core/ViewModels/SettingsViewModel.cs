@@ -22,12 +22,18 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly IDialogService dialogs;
     private readonly string settingsPath;
 
-    public SettingsViewModel(ShellViewModel shell, FileLog log, IDialogService dialogs, string settingsPath)
+    private readonly IThemeService? themes;
+    private AppTheme theme;
+
+    public SettingsViewModel(
+        ShellViewModel shell, FileLog log, IDialogService dialogs, string settingsPath, IThemeService? themes = null)
     {
         this.shell = shell;
         this.log = log;
         this.dialogs = dialogs;
         this.settingsPath = settingsPath;
+        this.themes = themes;
+        theme = AppSettings.Load(settingsPath).Theme;
         shell.PropertyChanged += OnShellPropertyChanged;
         Loc.Instance.WhenLanguageChanges(this, static self => self.OnPropertyChanged(nameof(Language)));
     }
@@ -49,6 +55,29 @@ public sealed partial class SettingsViewModel : ObservableObject
             }
         }
     }
+
+    /// <summary>
+    /// Seçili tema. Değişirse hemen uygulanır ve kaydedilir; aynı değerin atanması bir şey yapmaz.
+    /// </summary>
+    public AppTheme Theme
+    {
+        get => theme;
+        set
+        {
+            if (theme == value)
+            {
+                return;
+            }
+
+            theme = value;
+            OnPropertyChanged();
+            themes?.Apply(value);
+            SaveTheme(value);
+        }
+    }
+
+    /// <summary>Hakkında bölümünde gösterilen uygulama sürümü.</summary>
+    public string AppVersion { get; init; } = string.Empty;
 
     public WingetDiagnosis? Diagnosis => shell.Diagnosis;
 
@@ -119,6 +148,19 @@ public sealed partial class SettingsViewModel : ObservableObject
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             log.TryError("Dil ayarı kaydedilemedi.", ex);
+        }
+    }
+
+    // Kaydedilemezse tema yine de uygulanmıştır ve geri alınmaz; hata günlüğe yazılır.
+    private void SaveTheme(AppTheme value)
+    {
+        try
+        {
+            (AppSettings.Load(settingsPath) with { Theme = value }).Save(settingsPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log.TryError("Tema ayarı kaydedilemedi.", ex);
         }
     }
 

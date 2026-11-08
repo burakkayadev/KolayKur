@@ -31,7 +31,8 @@ public sealed class SettingsViewModelTests : IDisposable
 
     private FileLog Log => new(Path.Combine(directory, "logs"));
 
-    private async Task<(SettingsViewModel ViewModel, ShellViewModel Shell)> CreateAsync(ISystemProbe? probe = null)
+    private async Task<(SettingsViewModel ViewModel, ShellViewModel Shell)> CreateAsync(
+        ISystemProbe? probe = null, IThemeService? themes = null, AppTheme theme = AppTheme.System)
     {
         var shell = new ShellViewModel(
             new WingetHealthService(probe ?? new FakeSystemProbe()),
@@ -41,9 +42,9 @@ public sealed class SettingsViewModelTests : IDisposable
             log: Log);
         // Lisans notu bir kez gösterilmiş olsun; Inform çağrıları yalnızca ayarlar sayfasından gelsin.
         Directory.CreateDirectory(directory);
-        new AppSettings(Language: "tr", LicenseNoticeShown: true).Save(SettingsPath);
+        new AppSettings(Language: "tr", LicenseNoticeShown: true, Theme: theme).Save(SettingsPath);
         await shell.StartAsync(CancellationToken.None);
-        return (new SettingsViewModel(shell, Log, dialogs, SettingsPath), shell);
+        return (new SettingsViewModel(shell, Log, dialogs, SettingsPath, themes), shell);
     }
 
     // ---- Dil ----
@@ -125,6 +126,84 @@ public sealed class SettingsViewModelTests : IDisposable
         // Assert: arayüz dili yine değişir, hata günlüğe yazılır, program çökmez.
         Assert.Equal("en", Loc.Instance.Language);
         Assert.Contains("Dil ayarı kaydedilemedi", File.ReadAllText(Log.CurrentFile), StringComparison.Ordinal);
+    }
+
+    // ---- Tema ----
+
+    [Fact]
+    public async Task Theme_starts_from_saved_setting()
+    {
+        var (viewModel, _) = await CreateAsync(theme: AppTheme.Dark);
+
+        Assert.Equal(AppTheme.Dark, viewModel.Theme);
+    }
+
+    [Fact]
+    public async Task Theme_change_is_applied_and_saved()
+    {
+        // Arrange
+        var themes = new FakeThemeService();
+        var (viewModel, _) = await CreateAsync(themes: themes);
+        viewModel.Language = "en";
+
+        // Act
+        viewModel.Theme = AppTheme.Dark;
+
+        // Assert
+        Assert.Equal([AppTheme.Dark], themes.Applied);
+        var saved = AppSettings.Load(SettingsPath);
+        Assert.Equal(AppTheme.Dark, saved.Theme);
+        Assert.Equal("en", saved.Language);
+        Assert.True(saved.LicenseNoticeShown);
+    }
+
+    [Fact]
+    public async Task Theme_change_raises_property_changed()
+    {
+        var (viewModel, _) = await CreateAsync();
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        viewModel.Theme = AppTheme.Light;
+
+        Assert.Equal([nameof(SettingsViewModel.Theme)], changed);
+    }
+
+    [Fact]
+    public async Task Theme_save_failure_still_applies()
+    {
+        // Arrange: ayar dosyasının yerinde bir klasör var, dosya yazılamaz.
+        var themes = new FakeThemeService();
+        var (viewModel, _) = await CreateAsync(themes: themes);
+        File.Delete(SettingsPath);
+        Directory.CreateDirectory(SettingsPath);
+
+        // Act
+        viewModel.Theme = AppTheme.Dark;
+
+        // Assert
+        Assert.Equal([AppTheme.Dark], themes.Applied);
+        Assert.Equal(AppTheme.Dark, viewModel.Theme);
+        Assert.Contains("Tema ayarı kaydedilemedi", File.ReadAllText(Log.CurrentFile), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Setting_the_same_theme_does_nothing()
+    {
+        // Arrange
+        var themes = new FakeThemeService();
+        var (viewModel, _) = await CreateAsync(themes: themes);
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+        File.Delete(SettingsPath);
+
+        // Act
+        viewModel.Theme = AppTheme.System;
+
+        // Assert
+        Assert.Empty(themes.Applied);
+        Assert.Empty(changed);
+        Assert.False(File.Exists(SettingsPath));
     }
 
     // ---- Winget durumu ----

@@ -1,8 +1,12 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KolayKur.Core.Support;
 
-public sealed record AppSettings(string Language = "tr", bool LicenseNoticeShown = false)
+public sealed record AppSettings(
+    string Language = "tr",
+    bool LicenseNoticeShown = false,
+    [property: JsonConverter(typeof(AppThemeJsonConverter))] AppTheme Theme = AppTheme.System)
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 

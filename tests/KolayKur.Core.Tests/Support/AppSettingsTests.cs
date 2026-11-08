@@ -68,6 +68,53 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
+    public void Theme_defaults_to_system_when_missing()
+    {
+        // Arrange
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(SettingsPath, "{\"Language\":\"en\",\"LicenseNoticeShown\":true}");
+
+        // Act
+        var settings = AppSettings.Load(SettingsPath);
+
+        // Assert
+        Assert.Equal(AppTheme.System, settings.Theme);
+        Assert.Equal("en", settings.Language);
+        Assert.True(settings.LicenseNoticeShown);
+    }
+
+    [Theory]
+    [InlineData("\"Purple\"")]
+    [InlineData("7")]
+    [InlineData("null")]
+    [InlineData("{\"x\":1}")]
+    public void Unknown_theme_falls_back_to_system_and_keeps_other_values(string themeJson)
+    {
+        // Arrange
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(SettingsPath, $"{{\"Language\":\"en\",\"Theme\":{themeJson},\"LicenseNoticeShown\":true}}");
+
+        // Act
+        var settings = AppSettings.Load(SettingsPath);
+
+        // Assert
+        Assert.Equal(AppTheme.System, settings.Theme);
+        Assert.Equal("en", settings.Language);
+        Assert.True(settings.LicenseNoticeShown);
+    }
+
+    [Fact]
+    public void Theme_round_trips_as_text()
+    {
+        // Act
+        new AppSettings(Theme: AppTheme.Dark).Save(SettingsPath);
+
+        // Assert
+        Assert.Contains("\"Dark\"", File.ReadAllText(SettingsPath), StringComparison.Ordinal);
+        Assert.Equal(AppTheme.Dark, AppSettings.Load(SettingsPath).Theme);
+    }
+
+    [Fact]
     public void Save_replaces_existing_file()
     {
         new AppSettings("en", true).Save(SettingsPath);
