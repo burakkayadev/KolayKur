@@ -5,6 +5,7 @@
              xmlns:app="clr-namespace:KolayKur.App"
              xmlns:conv="clr-namespace:KolayKur.App.Converters"
              xmlns:support="clr-namespace:KolayKur.Core.Support;assembly=KolayKur.Core"
+             xmlns:layout="clr-namespace:KolayKur.App.Views.Layout"
              xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core">
     <!-- DataContext: SettingsViewModel (ana pencere atar). Dil ve tema seçimi anında uygulanır ve kaydedilir. Renkler yalnız DynamicResource ile. -->
     <UserControl.Resources>
@@ -23,13 +24,19 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="TextTrimming" Value="None" />
         </Style>
+        <Style x:Key="RowIconStyle" TargetType="ui:SymbolIcon">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="Margin" Value="0,0,14,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
         <Style x:Key="SettingsRowStyle" TargetType="Border" BasedOn="{StaticResource AppCardStyle}">
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel MinWidth="560" MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,16,0">
+        <StackPanel MaxWidth="720" HorizontalAlignment="Left" Margin="0,0,16,0">
             <TextBlock Style="{StaticResource PageTitleTextStyle}" Margin="0,0,0,16"
                        Text="{Binding [Menu_Settings], Source={x:Static loc:Loc.Instance}}" />
 
@@ -37,16 +44,18 @@
             <Border Style="{StaticResource SettingsRowStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <ui:SymbolIcon Grid.Column="0" Symbol="DarkTheme24" Style="{StaticResource RowIconStyle}" />
+                    <layout:AdaptiveRowPanel Grid.Column="1">
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock Style="{StaticResource RowTitleStyle}"
                                    Text="{Binding [Theme_Title], Source={x:Static loc:Loc.Instance}}" />
                         <TextBlock Style="{StaticResource RowDescriptionStyle}"
                                    Text="{Binding [Theme_Description], Source={x:Static loc:Loc.Instance}}" />
                     </StackPanel>
-                    <Border Grid.Column="1" VerticalAlignment="Center" Padding="3" CornerRadius="8" BorderThickness="1"
+                    <Border VerticalAlignment="Center" Padding="3" CornerRadius="8" BorderThickness="1"
                             Background="{DynamicResource WindowBackgroundBrush}"
                             BorderBrush="{DynamicResource CardStrokeBrush}">
                         <StackPanel Orientation="Horizontal">
@@ -64,6 +73,7 @@
                                          IsChecked="{Binding Theme, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter={x:Static support:AppTheme.Dark}}" />
                         </StackPanel>
                     </Border>
+                </layout:AdaptiveRowPanel>
                 </Grid>
             </Border>
 
@@ -71,22 +81,25 @@
             <Border Style="{StaticResource SettingsRowStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <ui:SymbolIcon Grid.Column="0" Symbol="LocalLanguage24" Style="{StaticResource RowIconStyle}" />
+                    <layout:AdaptiveRowPanel Grid.Column="1">
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock Style="{StaticResource RowTitleStyle}"
                                    Text="{Binding [Settings_Language], Source={x:Static loc:Loc.Instance}}" />
                         <TextBlock Style="{StaticResource RowDescriptionStyle}"
                                    Text="{Binding [Settings_LanguageDescription], Source={x:Static loc:Loc.Instance}}" />
                     </StackPanel>
-                    <ComboBox Grid.Column="1" Width="160" VerticalAlignment="Center"
+                    <ComboBox Width="160" VerticalAlignment="Center"
                               AutomationProperties.AutomationId="LanguageSelector"
                               SelectedValuePath="Tag"
                               SelectedValue="{Binding Language}">
                         <ComboBoxItem Tag="tr" Content="{Binding [Language_Tr], Source={x:Static loc:Loc.Instance}}" />
                         <ComboBoxItem Tag="en" Content="{Binding [Language_En], Source={x:Static loc:Loc.Instance}}" />
                     </ComboBox>
+                </layout:AdaptiveRowPanel>
                 </Grid>
             </Border>
 
@@ -94,13 +107,15 @@
             <Border Style="{StaticResource SettingsRowStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <ui:SymbolIcon Grid.Column="0" Symbol="Box24" Style="{StaticResource RowIconStyle}" />
+                    <layout:AdaptiveRowPanel Grid.Column="1">
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock Style="{StaticResource RowTitleStyle}"
                                    Text="{Binding [Settings_WingetStatus], Source={x:Static loc:Loc.Instance}}" />
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                        <WrapPanel Margin="0,2,0,0">
                             <TextBlock Style="{StaticResource SecondaryTextStyle}">
                                 <TextBlock.Text>
                                     <MultiBinding Converter="{StaticResource LocKey}">
@@ -111,11 +126,12 @@
                             </TextBlock>
                             <TextBlock Margin="8,0,0,0" Style="{StaticResource SecondaryTextStyle}"
                                        Text="{Binding WingetVersion}" />
-                        </StackPanel>
+                        </WrapPanel>
                     </StackPanel>
-                    <ui:Button Grid.Column="1" VerticalAlignment="Center" Padding="20,6" Appearance="Secondary"
+                    <ui:Button VerticalAlignment="Center" Padding="20,6" Appearance="Secondary"
                                Command="{Binding OpenRepairCommand}"
                                Content="{Binding [Settings_Repair], Source={x:Static loc:Loc.Instance}}" />
+                </layout:AdaptiveRowPanel>
                 </Grid>
             </Border>
 
@@ -123,18 +139,21 @@
             <Border Style="{StaticResource SettingsRowStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <ui:SymbolIcon Grid.Column="0" Symbol="DocumentText24" Style="{StaticResource RowIconStyle}" />
+                    <layout:AdaptiveRowPanel Grid.Column="1">
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock Style="{StaticResource RowTitleStyle}"
-                                   Text="{Binding [Settings_OpenLog], Source={x:Static loc:Loc.Instance}}" />
+                                   Text="{Binding [Settings_LogTitle], Source={x:Static loc:Loc.Instance}}" />
                         <TextBlock Style="{StaticResource RowDescriptionStyle}"
                                    Text="{Binding [Settings_LogDescription], Source={x:Static loc:Loc.Instance}}" />
                     </StackPanel>
-                    <ui:Button Grid.Column="1" VerticalAlignment="Center" Padding="20,6" Appearance="Secondary"
+                    <ui:Button VerticalAlignment="Center" Padding="20,6" Appearance="Secondary"
                                Command="{Binding OpenLogCommand}"
                                Content="{Binding [Settings_OpenLog], Source={x:Static loc:Loc.Instance}}" />
+                </layout:AdaptiveRowPanel>
                 </Grid>
             </Border>
 

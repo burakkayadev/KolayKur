@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:views="clr-namespace:KolayKur.App.Views"
+             xmlns:layout="clr-namespace:KolayKur.App.Views.Layout"
              xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core">
     <!-- DataContext: UpdatesViewModel (ana pencere atar). Sayfa görünür olunca liste yüklenir (kod arkası). Renkler yalnız DynamicResource ile Themes sözlüklerinden gelir. -->
     <UserControl.Resources>
@@ -51,19 +52,18 @@
                     <!-- Sürüm değişimi: yüklü sürüm çipi, ok, vurgu tonlu yeni sürüm çipi (dar kartta kısalır); altında ikincil "Güncelle". -->
                     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" MaxWidth="180" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" MaxWidth="180" />
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Style="{StaticResource VersionChipStyle}" MaxWidth="80">
+                        <Border Grid.Column="0" Style="{StaticResource VersionChipStyle}" HorizontalAlignment="Left">
                             <TextBlock Text="{Binding InstalledVersion}" Style="{StaticResource SecondaryTextStyle}"
                                        ToolTip="{Binding InstalledVersion}" />
                         </Border>
                         <ui:SymbolIcon Grid.Column="1" Symbol="ArrowRight16" FontSize="14" Margin="6,0"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <Grid Grid.Column="2" MaxWidth="80">
+                        <Grid Grid.Column="2" HorizontalAlignment="Left">
                             <Border CornerRadius="4" Opacity="0.15" Background="{DynamicResource BrandAccentBrush}" />
                             <Border CornerRadius="4" BorderThickness="1" Padding="6,1"
                                     BorderBrush="{DynamicResource BrandAccentBrush}">
@@ -77,6 +77,7 @@
 
                     <ui:Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,12,0,0" Padding="16,4"
                                HorizontalAlignment="Stretch" Appearance="Secondary"
+                               AutomationProperties.HelpText="{Binding Name}"
                                Command="{Binding DataContext.UpgradeCommand, RelativeSource={RelativeSource AncestorType=views:UpdatesPage}}"
                                CommandParameter="{Binding}"
                                Content="{Binding [Updates_Update], Source={x:Static loc:Loc.Instance}}" />
@@ -96,18 +97,22 @@
         <TextBlock Grid.Row="0" Style="{StaticResource PageTitleTextStyle}"
                    Text="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
 
-        <Grid Grid.Row="1" Margin="0,16,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" Style="{StaticResource SecondaryTextStyle}"
-                       FontSize="14" Text="{Binding CountText}" />
-            <ui:Button Grid.Column="1" Margin="12,0,0,0" Padding="20,6" Appearance="Primary"
+        <layout:AdaptiveRowPanel Grid.Row="1" Margin="0,16,0,0">
+            <WrapPanel VerticalAlignment="Center">
+                <TextBlock Margin="0,0,12,0" VerticalAlignment="Center" Style="{StaticResource SecondaryTextStyle}"
+                           FontSize="14" Text="{Binding CountText}" />
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                    <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" />
+                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Style="{StaticResource SecondaryTextStyle}"
+                               Text="{Binding [Common_Loading], Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+            </WrapPanel>
+            <ui:Button VerticalAlignment="Center" Padding="20,6" Appearance="Primary"
                        IsEnabled="{Binding HasUpdates}"
                        Command="{Binding UpgradeAllCommand}"
                        Content="{Binding [Updates_UpdateAll], Source={x:Static loc:Loc.Instance}}" />
-        </Grid>
+        </layout:AdaptiveRowPanel>
 
         <views:ErrorInfoBar Grid.Row="2" Margin="0,12,0,0"
                             ErrorKey="{Binding ErrorKey}" ShowRetry="True" RetryCommand="{Binding LoadCommand}" />
@@ -125,14 +130,6 @@
                            TextAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            Text="{Binding [Updates_Empty], Source={x:Static loc:Loc.Instance}}" />
-            </StackPanel>
-
-            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,24,0,0"
-                        Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
-                <ui:ProgressRing IsIndeterminate="True" Width="32" Height="32" />
-                <TextBlock Margin="0,8,0,0" HorizontalAlignment="Center"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Text="{Binding [Common_Loading], Source={x:Static loc:Loc.Instance}}" />
             </StackPanel>
         </Grid>
     </Grid>

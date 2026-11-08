@@ -84,17 +84,12 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Başlık çubuğu: solda logo ve ad (Header). Sağ tarafa (İşlemler düğmesi) TrailingContent konur; pencere düğmeleri en sağda kalır. -->
-        <ui:TitleBar Grid.Row="0" ShowMaximize="True" ShowMinimize="True">
-            <ui:TitleBar.Header>
-                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <Image Width="18" Height="18" Source="{StaticResource LogoSmallImage}"
-                           RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               Text="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}" />
-                </StackPanel>
-            </ui:TitleBar.Header>
+        <!-- Başlık çubuğu: logo ve ad TitleBar'ın kendi Icon/Title alanlarında (sürükleme alanının parçası; Header içeriği sürüklemeden hariç tutulur). Sağ tarafa (İşlemler düğmesi) TrailingContent konur; pencere düğmeleri en sağda kalır. -->
+        <ui:TitleBar Grid.Row="0" ShowMaximize="True" ShowMinimize="True"
+                     Title="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="{StaticResource LogoSmallImage}" Width="18" Height="18" />
+            </ui:TitleBar.Icon>
             <!-- İşlemler paneli geçiş düğmesi (DataContext: OperationListViewModel, kod arkasında atanır). Panel kapalıyken sıradaki ve süren iş sayısı rozet olarak görünür. -->
             <ui:TitleBar.TrailingContent>
                 <ToggleButton x:Name="operationsToggle" Style="{StaticResource TitleToggleStyle}"
@@ -140,6 +135,7 @@
                     <Grid>
                         <RadioButton GroupName="Rail" Style="{StaticResource RailButtonStyle}"
                                      Tag="{x:Static ui:SymbolRegular.ArrowSync24}"
+                                     AutomationProperties.HelpText="{Binding DataContext.CountText, ElementName=updatesBadge}"
                                      Content="{Binding [Nav_Updates], Source={x:Static loc:Loc.Instance}}"
                                      IsChecked="{Binding CurrentPage, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter={x:Static vm:ShellPage.Updates}}" />
                         <!-- DataContext: UpdatesViewModel (kod arkasında atanır); güncelleme yokken gizli. -->
