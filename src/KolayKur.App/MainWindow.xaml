@@ -6,6 +6,7 @@
         xmlns:views="clr-namespace:KolayKur.App.Views"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:conv="clr-namespace:KolayKur.App.Converters"
+        Icon="Assets/KolayKur.ico"
         Title="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}"
         Width="1100" Height="720" MinWidth="760" MinHeight="520"
         ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica"

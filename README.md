@@ -12,6 +12,7 @@ Program tek bir `KolayKur.exe` dosyasıdır. Ek kurulum istemez; .NET çalışma
 - Yüklü uygulamaları listeleme ve kaldırma (kaldırmadan önce onay sorar)
 - Uygulama listesini dosyaya kaydetme ve o listeden kurma
 - Türkçe ve İngilizce arayüz
+- Açık, koyu veya Windows'a uyan tema
 - Winget yoksa veya bozuksa teşhis edip kurma ve onarma ("Onar" düğmesi). Winget'in hiç olmadığı durum Windows Sandbox'ta denendi; kurulu ama bozuk bir winget'in onarımı henüz gerçek bir makinede denenmedi.
 
 **Durum:** Kurma, güncelleme, kaldırma, izin penceresinde "Hayır", İngilizce arayüz ve listeyi dışa aktarma, proje sahibinin bilgisayarında gerçek winget ile denendi ve çalıştı (8 Kasım 2026). Toplu kurma ve listeden kurma yalnızca otomatik testlerde sınandı. Ayrıntı için aşağıdaki "Denenenler ve denenmeyenler" tablosuna bakın.
@@ -63,7 +64,7 @@ Tek dosya yayını:
 dotnet publish src/KolayKur.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out/release
 ```
 
-Sonuç `out/release/KolayKur.exe` dosyasıdır; dağıtılacak tek dosya budur (klasördeki `.pdb` dosyaları hata ayıklama içindir). Sıkıştırma (`EnableCompressionInSingleFile`) uygulama projesinde açıktır: dosya yaklaşık 69 MB olur, sıkıştırmasız yaklaşık 160 MB. Sıkıştırmasız üretmek isterseniz komuta `-p:EnableCompressionInSingleFile=false` ekleyin.
+Sonuç `out/release/KolayKur.exe` dosyasıdır; dağıtılacak tek dosya budur (klasördeki `.pdb` dosyaları hata ayıklama içindir). Sıkıştırma (`EnableCompressionInSingleFile`) uygulama projesinde açıktır: dosya yaklaşık 71 MB olur (ölçülen: 74.440.066 bayt). Sıkıştırmasız üretmek isterseniz komuta `-p:EnableCompressionInSingleFile=false` ekleyin.
 
 Testler:
 
@@ -79,7 +80,8 @@ Dürüst durum notu:
 
 | Konu | Durum |
 | --- | --- |
-| Otomatik testler (sahte winget ile) | Geçiyor (243 test) |
+| Otomatik testler (sahte winget ile) | Geçiyor (294 test) |
+| Yeni görünüm (açık/koyu tema, yeni ikon) | Otomatik testler ve ekran görüntüleriyle kapsandı; proje sahibinin son elle kontrolü bekliyor |
 | Tek `KolayKur.exe`'nin boş bir klasörde tek başına açılması | Denendi |
 | Programın ürettiği liste dosyasının `winget import` ile okunması | Denendi (biçim hatası yok) |
 | Programdan gerçek kurma / güncelleme / kaldırma | Denendi (proje sahibi, 8 Kasım 2026) |
@@ -100,7 +102,7 @@ KolayKur is a small Windows program that lets you use winget (the Windows packag
 
 It ships as a single `KolayKur.exe`. It needs no extra installation: .NET is bundled inside, so you do not need to install .NET. This was verified in Windows Sandbox (which has no .NET installed); it has not yet been tried on friends' PCs.
 
-**Features:** search and one-click install; multi-select install; list updates and update one or all; list and uninstall installed apps (asks first); export your app list to a file and install from a list; Turkish and English UI; diagnoses and installs or repairs a missing or broken winget (the missing-winget case was verified in Windows Sandbox; repairing an installed-but-broken winget on a real machine has not been tried yet).
+**Features:** search and one-click install; multi-select install; list updates and update one or all; list and uninstall installed apps (asks first); export your app list to a file and install from a list; Turkish and English UI; light, dark or follow-Windows theme; diagnoses and installs or repairs a missing or broken winget (the missing-winget case was verified in Windows Sandbox; repairing an installed-but-broken winget on a real machine has not been tried yet).
 
 **Status:** install, update, uninstall, the UAC "No" path, the English UI and export were tried with the real winget on the owner's PC and worked (8 November 2026). Batch install and install-from-list are covered by automated tests only.
 
