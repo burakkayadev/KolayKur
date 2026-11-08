@@ -2,7 +2,7 @@
 
 KolayKur, Windows'un paket yöneticisi winget'i terminal açmadan kullandıran küçük bir programdır. Uygulama arar, kurar, günceller ve kaldırır. Hepsi pencereden yapılır, komut yazmak gerekmez.
 
-Program tek bir `KolayKur.exe` dosyasıdır. Ek kurulum istemez ve .NET kurmanızı gerektirmez.
+Program tek bir `KolayKur.exe` dosyasıdır. Tasarım gereği ek kurulum istemez ve .NET çalışma ortamı içine gömülü gelir, yani .NET kurmanız gerekmemelidir. Bu, temiz bir makinede henüz denenmedi (aşağıdaki tabloya bakın).
 
 ## Neler yapar
 
@@ -14,7 +14,7 @@ Program tek bir `KolayKur.exe` dosyasıdır. Ek kurulum istemez ve .NET kurmanı
 - Türkçe ve İngilizce arayüz
 - Winget yoksa veya bozuksa teşhis edip kurma ve onarma ("Onar" düğmesi)
 
-Bir uygulamanın kurulumu yönetici izni isterse Windows'un kendi izin penceresi çıkar. Program normal kullanıcı olarak çalışır.
+Program normal kullanıcı olarak çalışır. Bir uygulamanın kurulumu yönetici izni isterse, tasarım gereği Windows'un kendi izin penceresi (UAC) çıkması beklenir. İzin penceresi ve "Hayır" yolu henüz denenmedi (aşağıdaki tabloya bakın).
 
 **Lisans:** "Kur" düğmesine basmak, o uygulamanın lisansını kabul etmek anlamına gelir. Program bunu ilk açılışta hatırlatır.
 
@@ -76,6 +76,7 @@ Dürüst durum notu:
 | Bu geliştirme bilgisayarında tek `KolayKur.exe`'nin başka bir klasörde açılması | Denendi |
 | Programın ürettiği liste dosyasının `winget import` ile okunması | Denendi (biçim hatası yok) |
 | Temiz bir Windows 11 bilgisayarda (.NET kurulu değilken) açılması | Henüz denenmedi |
+| UAC izin penceresi ve "Hayır" yolu | Henüz denenmedi |
 | Windows Sandbox'ta winget'in onarılması | Henüz denenmedi |
 | Windows 10 | Henüz denenmedi |
 | Arkadaşların GitHub'dan indirip SmartScreen uyarısını geçmesi | Henüz denenmedi |
@@ -86,7 +87,7 @@ Dürüst durum notu:
 
 KolayKur is a small Windows program that lets you use winget (the Windows package manager) without opening a terminal. You can search, install, update and uninstall apps from a window.
 
-It ships as a single `KolayKur.exe`. You do not need to install .NET.
+It ships as a single `KolayKur.exe`. By design it needs no extra installation and .NET is bundled inside, so you should not need to install .NET. This has not yet been tested on a clean machine (see "Not yet tested" below).
 
 **Features:** search and one-click install; multi-select install; list updates and update one or all; list and uninstall installed apps (asks first); export your app list to a file and install from a list; Turkish and English UI; diagnoses and repairs a missing or broken winget.
 
@@ -100,6 +101,8 @@ It ships as a single `KolayKur.exe`. You do not need to install .NET.
 
 **Licenses:** pressing "Install" (Kur) means you accept that package's license.
 
+**Administrator rights:** the program runs as a normal user. If an installer needs admin rights, Windows' own UAC prompt is expected to appear (that is Windows' behavior by design); the prompt and the "No"/cancel path have not been tested yet.
+
 **Build:** see the `dotnet publish` command above. Run tests with `dotnet test --filter "Category!=Real"`. Tests marked `Real` use the real winget; the one that installs and uninstalls software only runs when `KOLAYKUR_REAL_INSTALL=1` is set.
 
-**Not yet tested:** a clean Windows 11 machine without .NET, the repair flow in Windows Sandbox, Windows 10, and downloads by friends through GitHub Releases.
+**Not yet tested:** a clean Windows 11 machine without .NET, the UAC prompt and the "No" path, the repair flow in Windows Sandbox, Windows 10, and downloads by friends through GitHub Releases.
