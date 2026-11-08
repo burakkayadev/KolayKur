@@ -18,11 +18,26 @@ public sealed class FakeDialogService : IDialogService
 
     public void Inform(string message) => Informed.Add(message);
 
-    public string? PickOpenFile() => null;
+    /// <summary>Dosya seçicinin döndüreceği yol; <c>null</c> kullanıcının vazgeçtiği anlamına gelir.</summary>
+    public string? OpenFilePath { get; set; }
 
-    public string? PickSaveFile() => null;
+    public string? SaveFilePath { get; set; }
+
+    /// <summary>Doluysa <see cref="OpenFile"/> bunu fırlatır.</summary>
+    public Exception? OpenFileException { get; set; }
+
+    public List<string> Opened { get; } = [];
+
+    public string? PickOpenFile() => OpenFilePath;
+
+    public string? PickSaveFile() => SaveFilePath;
 
     public void OpenFile(string path)
     {
+        Opened.Add(path);
+        if (OpenFileException is not null)
+        {
+            throw OpenFileException;
+        }
     }
 }

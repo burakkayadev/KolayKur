@@ -23,7 +23,7 @@ public sealed class WingetRepairServiceTests : IDisposable
         // Onarımdan sonra winget çalışıyor: yeni teşhis Healthy döner.
         var health = new WingetHealthService(new FakeSystemProbe());
         var service = new WingetRepairService(actions, health, new FileLog(logDirectory));
-        return service.RepairAsync(diagnosis, new Progress<string>(), CancellationToken.None);
+        return service.RepairAsync(diagnosis, new Progress<RepairStep>(), CancellationToken.None);
     }
 
     [Fact]
@@ -89,6 +89,45 @@ public sealed class WingetRepairServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task NotInstalled_reports_stages_with_subjects_not_text()
+    {
+        // Arrange: eşzamanlı toplayıcı, bildirim sırası bozulmasın.
+        var progress = new ListProgress();
+        var service = new WingetRepairService(
+            new FakeRepairActions(), new WingetHealthService(new FakeSystemProbe()), new FileLog(logDirectory));
+
+        // Act
+        await service.RepairAsync(
+            new WingetDiagnosis(WingetState.NotInstalled, null, "yok"), progress, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(
+            [
+                RepairStage.SearchingRelease,
+                RepairStage.ExtractingDependencies,
+                RepairStage.InstallingAppInstaller,
+            ],
+            progress.Reports.Select(report => report.Stage));
+    }
+
+    [Fact]
+    public async Task DependencyBroken_reports_the_component_being_installed()
+    {
+        var progress = new ListProgress();
+        var service = new WingetRepairService(
+            new FakeRepairActions(), new WingetHealthService(new FakeSystemProbe()), new FileLog(logDirectory));
+
+        await service.RepairAsync(
+            new WingetDiagnosis(WingetState.DependencyBroken, FakeRepairActions.WindowsAppRuntime, "eksik"),
+            progress,
+            CancellationToken.None);
+
+        var install = Assert.Single(progress.Reports, report => report.Stage == RepairStage.InstallingDependency);
+        Assert.Equal(FakeRepairActions.WindowsAppRuntime, install.Subject);
+        Assert.Equal(RepairStage.Registering, progress.Reports[^1].Stage);
+    }
+
+        [Fact]
     public async Task Repair_returns_fresh_diagnosis()
     {
         var actions = new FakeRepairActions();
@@ -96,5 +135,12 @@ public sealed class WingetRepairServiceTests : IDisposable
         var result = await RepairAsync(actions, new WingetDiagnosis(WingetState.NotInstalled, null, "yok"));
 
         Assert.Equal(WingetState.Healthy, result.State);
+    }
+
+    private sealed class ListProgress : IProgress<RepairStep>
+    {
+        public List<RepairStep> Reports { get; } = [];
+
+        public void Report(RepairStep value) => Reports.Add(value);
     }
 }

@@ -38,8 +38,14 @@ public sealed partial class ShellViewModel(
     public WingetDiagnosis? Diagnosis
     {
         get => diagnosis;
-        private set => SetProperty(ref diagnosis, value);
+        private set => SetDiagnosis(value);
     }
+
+    /// <summary>
+    /// Çalışan winget'in sürümü (<c>winget --version</c> çıktısındaki baştaki <c>v</c> atılmış, örn. <c>1.29.380</c>);
+    /// winget çalışmıyorsa veya denetim bitmediyse boş metin.
+    /// </summary>
+    public string WingetVersion => Diagnosis is { State: WingetState.Healthy } healthy ? healthy.Detail.TrimStart('v') : string.Empty;
 
     /// <summary>Denetim sürerken ve onarım sayfası açıkken menü kullanılamaz.</summary>
     public bool IsMenuEnabled => !IsChecking && CurrentPage != ShellPage.Repair;
@@ -75,6 +81,14 @@ public sealed partial class ShellViewModel(
         finally
         {
             IsChecking = false;
+        }
+    }
+
+    private void SetDiagnosis(WingetDiagnosis? value)
+    {
+        if (SetProperty(ref diagnosis, value, nameof(Diagnosis)))
+        {
+            OnPropertyChanged(nameof(WingetVersion));
         }
     }
 

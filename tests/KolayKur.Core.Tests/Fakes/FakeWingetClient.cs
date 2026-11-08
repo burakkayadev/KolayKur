@@ -17,6 +17,7 @@ public sealed class FakeWingetClient : IWingetClient
     private readonly ConcurrentQueue<FakeCall> calls = new();
     private readonly ConcurrentQueue<FakeSearchCall> searchCalls = new();
     private int upgradeListCalls;
+    private int installedListCalls;
     private int running;
     private int maxConcurrent;
 
@@ -41,6 +42,9 @@ public sealed class FakeWingetClient : IWingetClient
 
     /// <summary><see cref="GetUpgradesAsync"/> kaç kez çağrıldı.</summary>
     public int UpgradeListCalls => Volatile.Read(ref upgradeListCalls);
+
+    /// <summary><see cref="GetInstalledAsync"/> kaç kez çağrıldı.</summary>
+    public int InstalledListCalls => Volatile.Read(ref installedListCalls);
 
     /// <summary>Aynı anda çalışan işlem sayısının görülen en yüksek değeri.</summary>
     public int MaxConcurrent => Volatile.Read(ref maxConcurrent);
@@ -74,7 +78,11 @@ public sealed class FakeWingetClient : IWingetClient
             || p.Name.Contains(query, StringComparison.OrdinalIgnoreCase)));
     }
 
-    public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct) => List(Installed);
+    public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct)
+    {
+        Interlocked.Increment(ref installedListCalls);
+        return List(Installed);
+    }
 
     public Task<IReadOnlyList<PackageInfo>> GetUpgradesAsync(CancellationToken ct)
     {

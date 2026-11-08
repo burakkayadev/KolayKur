@@ -27,9 +27,6 @@
   <data name="Menu_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="Page_ComingSoon" xml:space="preserve">
-    <value>This page will be ready soon.</value>
-  </data>
   <data name="OperationList_Title" xml:space="preserve">
     <value>Operations</value>
   </data>
@@ -182,5 +179,77 @@
   </data>
   <data name="Stage_finished" xml:space="preserve">
     <value>Done</value>
+  </data>
+  <data name="Installed_Uninstall" xml:space="preserve">
+    <value>Uninstall</value>
+  </data>
+  <data name="Installed_Export" xml:space="preserve">
+    <value>Export list</value>
+  </data>
+  <data name="Installed_Import" xml:space="preserve">
+    <value>Install from list</value>
+  </data>
+  <data name="Installed_Empty" xml:space="preserve">
+    <value>No installed apps found.</value>
+  </data>
+  <data name="Installed_ConfirmUninstall" xml:space="preserve">
+    <value>Uninstall {0}?</value>
+  </data>
+  <data name="Error_ListFile" xml:space="preserve">
+    <value>The list file could not be read, so nothing was installed. Make sure it is a list written by this program or by the "winget export" command.</value>
+  </data>
+  <data name="Error_ListSave" xml:space="preserve">
+    <value>The list file could not be written. Try another folder or file name.</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Language_Tr" xml:space="preserve">
+    <value>Türkçe</value>
+  </data>
+  <data name="Language_En" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Settings_WingetStatus" xml:space="preserve">
+    <value>Winget status</value>
+  </data>
+  <data name="Settings_WingetHealthy" xml:space="preserve">
+    <value>Working</value>
+  </data>
+  <data name="Settings_WingetBroken" xml:space="preserve">
+    <value>Not working, repair needed</value>
+  </data>
+  <data name="Settings_WingetUnknown" xml:space="preserve">
+    <value>Not checked yet</value>
+  </data>
+  <data name="Settings_Repair" xml:space="preserve">
+    <value>Repair</value>
+  </data>
+  <data name="Settings_OpenLog" xml:space="preserve">
+    <value>Open log</value>
+  </data>
+  <data name="Settings_RepairNotNeeded" xml:space="preserve">
+    <value>Winget is already working, no repair is needed.</value>
+  </data>
+  <data name="Settings_LogOpenFailed" xml:space="preserve">
+    <value>The log file could not be opened. It is in the "%LocalAppData%\KolayKur\logs" folder.</value>
+  </data>
+  <data name="Repair_Stage_SearchingRelease" xml:space="preserve">
+    <value>Looking for the latest winget release.</value>
+  </data>
+  <data name="Repair_Stage_Downloading" xml:space="preserve">
+    <value>Downloading {0}: {1}%</value>
+  </data>
+  <data name="Repair_Stage_ExtractingDependencies" xml:space="preserve">
+    <value>Extracting dependencies.</value>
+  </data>
+  <data name="Repair_Stage_InstallingAppInstaller" xml:space="preserve">
+    <value>Installing App Installer.</value>
+  </data>
+  <data name="Repair_Stage_InstallingDependency" xml:space="preserve">
+    <value>Installing {0}.</value>
+  </data>
+  <data name="Repair_Stage_Registering" xml:space="preserve">
+    <value>Registering App Installer.</value>
   </data>
 </root>

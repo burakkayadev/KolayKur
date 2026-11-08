@@ -12,6 +12,8 @@ public partial class MainWindow : Window
         ShellViewModel shell,
         SearchViewModel search,
         UpdatesViewModel updates,
+        InstalledViewModel installed,
+        SettingsViewModel settings,
         OperationListViewModel operations)
     {
         this.shell = shell;
@@ -21,6 +23,8 @@ public partial class MainWindow : Window
         // Sayfaların kendi ViewModel'i vardır; kabuk yalnızca hangisinin görüneceğini seçer.
         searchPage.DataContext = search;
         updatesPage.DataContext = updates;
+        installedPage.DataContext = installed;
+        settingsPage.DataContext = settings;
         operationList.DataContext = operations;
     }
 

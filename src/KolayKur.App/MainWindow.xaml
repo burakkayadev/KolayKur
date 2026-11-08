@@ -8,38 +8,6 @@
         Width="1000" Height="680" MinWidth="720" MinHeight="480"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <Style x:Key="PageTitleStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="26" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding CurrentPage}" Value="Search">
-                    <Setter Property="Text" Value="{Binding [Menu_Search], Source={x:Static loc:Loc.Instance}}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding CurrentPage}" Value="Updates">
-                    <Setter Property="Text" Value="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding CurrentPage}" Value="Installed">
-                    <Setter Property="Text" Value="{Binding [Menu_Installed], Source={x:Static loc:Loc.Instance}}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding CurrentPage}" Value="Settings">
-                    <Setter Property="Text" Value="{Binding [Menu_Settings], Source={x:Static loc:Loc.Instance}}" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Yer tutucu yalnızca Görev 8'in sayfaları (Yüklü uygulamalar, Ayarlar) için kalır. -->
-        <Style x:Key="PlaceholderPanelStyle" TargetType="StackPanel">
-            <Setter Property="Visibility" Value="Collapsed" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding CurrentPage}" Value="Installed">
-                    <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding CurrentPage}" Value="Settings">
-                    <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
         <!-- Sayfa içeriği winget denetimi sürerken gösterilmez: onarım ekranı diğer sayfalardan önce gelir. -->
         <Style x:Key="SearchHostStyle" TargetType="Grid">
             <Setter Property="Visibility" Value="Collapsed" />
@@ -60,6 +28,32 @@
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
                         <Condition Binding="{Binding CurrentPage}" Value="Updates" />
+                        <Condition Binding="{Binding IsChecking}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="InstalledHostStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CurrentPage}" Value="Installed" />
+                        <Condition Binding="{Binding IsChecking}" Value="False" />
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Visibility" Value="Visible" />
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SettingsHostStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CurrentPage}" Value="Settings" />
                         <Condition Binding="{Binding IsChecking}" Value="False" />
                     </MultiDataTrigger.Conditions>
                     <Setter Property="Visibility" Value="Visible" />
@@ -110,13 +104,6 @@
             </ListBox>
 
             <Grid Grid.Column="1" Margin="24">
-                <!-- Görev 8 bu yer tutucuyu gerçek sayfalarla değiştirir. -->
-                <StackPanel Style="{StaticResource PlaceholderPanelStyle}">
-                    <TextBlock Style="{StaticResource PageTitleStyle}" />
-                    <TextBlock Margin="0,8,0,0" Foreground="Gray"
-                               Text="{Binding [Page_ComingSoon], Source={x:Static loc:Loc.Instance}}" />
-                </StackPanel>
-
                 <!-- Sayfa ViewModel'leri MainWindow kurucusunda atanır; kabuğun DataContext'i yalnızca bu sarmalayıcılarda geçerlidir. -->
                 <Grid Style="{StaticResource SearchHostStyle}">
                     <views:SearchPage x:Name="searchPage" />
@@ -124,6 +111,14 @@
 
                 <Grid Style="{StaticResource UpdatesHostStyle}">
                     <views:UpdatesPage x:Name="updatesPage" />
+                </Grid>
+
+                <Grid Style="{StaticResource InstalledHostStyle}">
+                    <views:InstalledPage x:Name="installedPage" />
+                </Grid>
+
+                <Grid Style="{StaticResource SettingsHostStyle}">
+                    <views:SettingsPage x:Name="settingsPage" />
                 </Grid>
 
                 <Grid Style="{StaticResource RepairHostStyle}">

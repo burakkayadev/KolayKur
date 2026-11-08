@@ -23,7 +23,7 @@ public partial class App : Application
         try
         {
             var app = Compose(dialogs);
-            window = new MainWindow(app.Shell, app.Search, app.Updates, app.Operations);
+            window = new MainWindow(app.Shell, app.Search, app.Updates, app.Installed, app.Settings, app.Operations);
             MainWindow = window;
             window.Show();
 
@@ -68,6 +68,8 @@ public partial class App : Application
             shell,
             new SearchViewModel(client, queue),
             new UpdatesViewModel(client, queue),
+            new InstalledViewModel(client, queue, dialogs, () => shell.WingetVersion),
+            new SettingsViewModel(shell, fileLog, dialogs, AppPaths.SettingsFile),
             new OperationListViewModel(queue));
     }
 
@@ -75,5 +77,7 @@ public partial class App : Application
         ShellViewModel Shell,
         SearchViewModel Search,
         UpdatesViewModel Updates,
+        InstalledViewModel Installed,
+        SettingsViewModel Settings,
         OperationListViewModel Operations);
 }

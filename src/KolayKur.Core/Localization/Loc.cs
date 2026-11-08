@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Resources;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -32,6 +33,35 @@ public sealed class Loc : ObservableObject
 
     /// <summary>Anahtar bulunamazsa, eksik metin gözden kaçmasın diye <c>!Anahtar!</c> döner.</summary>
     public string this[string key] => Resources.GetString(key, culture) ?? $"!{key}!";
+
+    /// <summary>
+    /// Dil değişince <paramref name="handler"/> çağrılır. <paramref name="owner"/> zayıf tutulur: kendi ömrü Loc.Instance'tan
+    /// kısa olan ViewModel'ler aboneliği bırakmak zorunda kalmaz; sahibi toplanınca abonelik kendini siler.
+    /// <paramref name="handler"/> sahibini yakalamamalı (parametre olarak alır).
+    /// </summary>
+    public void WhenLanguageChanges<T>(T owner, Action<T> handler)
+        where T : class
+    {
+        var weakOwner = new WeakReference<T>(owner);
+        PropertyChangedEventHandler? subscription = null;
+        subscription = (_, e) =>
+        {
+            if (e.PropertyName != nameof(Language))
+            {
+                return;
+            }
+
+            if (weakOwner.TryGetTarget(out var target))
+            {
+                handler(target);
+            }
+            else
+            {
+                PropertyChanged -= subscription;
+            }
+        };
+        PropertyChanged += subscription;
+    }
 
     /// <summary>Desteklenmeyen bir dil kodu varsayılan dile (Türkçe) düşer.</summary>
     public void SetLanguage(string code)

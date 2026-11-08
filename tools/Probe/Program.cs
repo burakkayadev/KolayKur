@@ -113,9 +113,10 @@ catch (Exception ex)
     return 1;
 }
 
-file sealed class ConsoleProgress : IProgress<string>
+file sealed class ConsoleProgress : IProgress<RepairStep>
 {
-    public void Report(string value) => Console.WriteLine(value);
+    public void Report(RepairStep value) =>
+        Console.WriteLine(FormattableString.Invariant($"{value.Stage} {value.Subject} {value.Percent}").TrimEnd());
 }
 
 file sealed class ConsoleOperationProgress : IProgress<OperationProgress>

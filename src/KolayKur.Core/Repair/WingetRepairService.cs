@@ -1,4 +1,3 @@
-using System.Globalization;
 using KolayKur.Core.Health;
 using KolayKur.Core.Support;
 
@@ -7,7 +6,7 @@ namespace KolayKur.Core.Repair;
 public sealed class WingetRepairService(IRepairActions actions, WingetHealthService health, FileLog log)
 {
     public async Task<WingetDiagnosis> RepairAsync(
-        WingetDiagnosis diagnosis, IProgress<string> progress, CancellationToken ct)
+        WingetDiagnosis diagnosis, IProgress<RepairStep> progress, CancellationToken ct)
     {
         if (diagnosis.State == WingetState.Healthy)
         {
@@ -47,21 +46,21 @@ public sealed class WingetRepairService(IRepairActions actions, WingetHealthServ
         return result;
     }
 
-    private async Task InstallFromScratchAsync(IProgress<string> progress, CancellationToken ct)
+    private async Task InstallFromScratchAsync(IProgress<RepairStep> progress, CancellationToken ct)
     {
         var release = await GetReleaseAsync(progress, ct);
         var dependenciesZip = await DownloadAsync(release.Dependencies, progress, ct);
         var appInstaller = await DownloadAsync(release.AppInstaller, progress, ct);
 
-        progress.Report("Bağımlılıklar çıkarılıyor.");
+        progress.Report(new RepairStep(RepairStage.ExtractingDependencies));
         var dependencyPaths = actions.ExtractDependencies(dependenciesZip);
 
-        progress.Report("Uygulama Yükleyici kuruluyor.");
+        progress.Report(new RepairStep(RepairStage.InstallingAppInstaller));
         await actions.AddPackageAsync(appInstaller, dependencyPaths, ct);
     }
 
     private async Task RepairDependencyAsync(
-        WingetDiagnosis diagnosis, IProgress<string> progress, CancellationToken ct)
+        WingetDiagnosis diagnosis, IProgress<RepairStep> progress, CancellationToken ct)
     {
         var brokenDependency = diagnosis.BrokenDependency
             ?? throw new InvalidOperationException("Bozuk bağımlılığın adı bilinmiyor.");
@@ -69,7 +68,7 @@ public sealed class WingetRepairService(IRepairActions actions, WingetHealthServ
         var release = await GetReleaseAsync(progress, ct);
         var dependenciesZip = await DownloadAsync(release.Dependencies, progress, ct);
 
-        progress.Report("Bağımlılıklar çıkarılıyor.");
+        progress.Report(new RepairStep(RepairStage.ExtractingDependencies));
         var prefix = brokenDependency + "_";
         var matches = actions.ExtractDependencies(dependenciesZip)
             .Where(path => Path.GetFileName(path).StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
@@ -79,7 +78,7 @@ public sealed class WingetRepairService(IRepairActions actions, WingetHealthServ
             throw new InvalidOperationException($"{brokenDependency} paketi indirilen bağımlılıklar içinde yok.");
         }
 
-        progress.Report($"{brokenDependency} kuruluyor.");
+        progress.Report(new RepairStep(RepairStage.InstallingDependency, brokenDependency));
         foreach (var path in matches)
         {
             await actions.AddPackageAsync(path, [], ct);
@@ -88,21 +87,21 @@ public sealed class WingetRepairService(IRepairActions actions, WingetHealthServ
         await RegisterAsync(progress, ct);
     }
 
-    private async Task RegisterAsync(IProgress<string> progress, CancellationToken ct)
+    private async Task RegisterAsync(IProgress<RepairStep> progress, CancellationToken ct)
     {
-        progress.Report("Uygulama Yükleyici kaydediliyor.");
+        progress.Report(new RepairStep(RepairStage.Registering));
         await actions.RegisterAppInstallerAsync(ct);
     }
 
-    private async Task<WingetRelease> GetReleaseAsync(IProgress<string> progress, CancellationToken ct)
+    private async Task<WingetRelease> GetReleaseAsync(IProgress<RepairStep> progress, CancellationToken ct)
     {
-        progress.Report("Son winget sürümü aranıyor.");
+        progress.Report(new RepairStep(RepairStage.SearchingRelease));
         var release = await actions.GetLatestReleaseAsync(ct);
         log.Info($"Son winget sürümü: {release.Tag}");
         return release;
     }
 
-    private async Task<string> DownloadAsync(RepairFile file, IProgress<string> progress, CancellationToken ct)
+    private async Task<string> DownloadAsync(RepairFile file, IProgress<RepairStep> progress, CancellationToken ct)
     {
         var lastPercent = -1;
         var downloadProgress = new InlineProgress<double>(fraction =>
@@ -114,7 +113,7 @@ public sealed class WingetRepairService(IRepairActions actions, WingetHealthServ
             }
 
             lastPercent = percent;
-            progress.Report(string.Create(CultureInfo.InvariantCulture, $"{file.Name} indiriliyor: %{percent}"));
+            progress.Report(new RepairStep(RepairStage.Downloading, file.Name, percent));
         });
 
         var path = await actions.DownloadAsync(file, downloadProgress, ct);

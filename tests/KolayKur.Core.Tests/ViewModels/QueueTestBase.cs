@@ -21,6 +21,14 @@ public abstract class QueueTestBase : IDisposable
         }
     }
 
+    /// <summary>Geçici klasörde (test bitince silinir) bir dosya yolu verir; dosyanın kendisini oluşturmaz.</summary>
+    protected string TempFile(string name)
+    {
+        var directory = Path.Combine(logDirectory, "files");
+        Directory.CreateDirectory(directory);
+        return Path.Combine(directory, name);
+    }
+
     protected OperationQueue CreateQueue(IWingetClient client) => new(client, new FileLog(logDirectory));
 
     protected static PackageInfo Pkg(string id) => new(id, id, "Yayıncı", "1.0", "2.0");
