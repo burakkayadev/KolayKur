@@ -303,4 +303,7 @@ Do you want to continue?</value>
   <data name="Error_ListTooLarge" xml:space="preserve">
     <value>The list file is too large (at most 1 MB and 500 apps); nothing was installed.</value>
   </data>
+  <data name="Error_Unhandled" xml:space="preserve">
+    <value>An unexpected error occurred. Details were written to the log file. The program keeps running; if the problem continues, close it and open it again.</value>
+  </data>
 </root>

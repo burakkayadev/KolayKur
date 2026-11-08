@@ -16,7 +16,14 @@ public sealed class FakeDialogService : IDialogService
         return ConfirmResult;
     }
 
-    public void Inform(string message) => Informed.Add(message);
+    /// <summary>Doluysa <see cref="Inform"/> mesajı kaydettikten sonra bunu çağırır (iç içe hata/yeniden giriş testleri için).</summary>
+    public Action<string>? OnInform { get; set; }
+
+    public void Inform(string message)
+    {
+        Informed.Add(message);
+        OnInform?.Invoke(message);
+    }
 
     /// <summary>Dosya seçicinin döndüreceği yol; <c>null</c> kullanıcının vazgeçtiği anlamına gelir.</summary>
     public string? OpenFilePath { get; set; }

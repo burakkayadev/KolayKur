@@ -303,4 +303,7 @@ Devam edilsin mi?</value>
   <data name="Error_ListTooLarge" xml:space="preserve">
     <value>Liste dosyası çok büyük (en fazla 1 MB ve 500 uygulama), hiçbir uygulama kurulmadı.</value>
   </data>
+  <data name="Error_Unhandled" xml:space="preserve">
+    <value>Beklenmeyen bir hata oluştu. Ayrıntılar günlük dosyasına yazıldı. Program çalışmaya devam ediyor; sorun sürerse programı kapatıp yeniden açın.</value>
+  </data>
 </root>

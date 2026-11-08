@@ -10,8 +10,14 @@ public sealed class WpfDialogService : IDialogService
 {
     private const string ListFileFilterKey = "Dialog_ListFilter";
 
+    // Varsayılan düğme "Hayır": Enter'a refleksle basmak kaldırma, kapatma veya toplu kurulumu onaylamasın.
     public bool Confirm(string message) =>
-        MessageBox.Show(message, Loc.Instance["App_Title"], MessageBoxButton.YesNo, MessageBoxImage.Question)
+        MessageBox.Show(
+            message,
+            Loc.Instance["App_Title"],
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No)
         == MessageBoxResult.Yes;
 
     public void Inform(string message) =>

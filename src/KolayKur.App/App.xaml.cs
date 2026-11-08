@@ -19,6 +19,12 @@ public partial class App : Application
         base.OnStartup(e);
 
         var dialogs = new WpfDialogService();
+        var fileLog = log = new FileLog(AppPaths.Logs);
+        HookGlobalErrorHandlers(new UnhandledErrorReporter(fileLog, dialogs));
+
+        // Kullanıcıya görünen ilk şeyden (klasör yazılamıyor uyarısı, ilk pencere) önce kayıtlı dil uygulanır.
+        Loc.Instance.SetLanguage(AppSettings.Load(AppPaths.SettingsFile).Language);
+
         MainWindow? window = null;
         try
         {
@@ -52,6 +58,28 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// Yakalanmamış hataların son durağı. Arayüz iş parçacığındaki hata günlüğe yazılır, kullanıcıya genel bir mesaj
+    /// gösterilir ve program çalışmaya devam eder (bellek tükenmesi hariç); arka plan hataları yalnızca günlüğe yazılır.
+    /// </summary>
+    private void HookGlobalErrorHandlers(UnhandledErrorReporter reporter)
+    {
+        DispatcherUnhandledException += (_, args) =>
+        {
+            reporter.ReportAndInform("arayüz iş parçacığı", args.Exception);
+            args.Handled = args.Exception is not OutOfMemoryException;
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            reporter.ReportOnly("gözlemlenmemiş görev hatası", args.Exception);
+            args.SetObserved();
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            reporter.ReportOnly(args.IsTerminating ? "program sonlanıyor" : "AppDomain", args.ExceptionObject);
+    }
+
+    /// <summary>
     /// Tek exe dağıtımında winmd dosyasını gömülü kaynaktan programın yanına çıkarır. Klasör yazılamazsa kullanıcıya
     /// ne yapacağını söyler ve <c>false</c> döner.
     /// </summary>
@@ -67,7 +95,6 @@ public partial class App : Application
         }
 
         Trace.TraceError($"winmd çıkarılamadı ({AppContext.BaseDirectory}): {result.Error}");
-        log = new FileLog(AppPaths.Logs);
         log.TryError($"winmd dosyası {AppContext.BaseDirectory} klasörüne yazılamadı.", result.Error);
         dialogs.Inform(Loc.Instance["Startup_FolderNotWritable"]);
         return false;
@@ -79,7 +106,7 @@ public partial class App : Application
     /// </summary>
     private Composition Compose(IDialogService dialogs)
     {
-        var fileLog = log = new FileLog(AppPaths.Logs);
+        var fileLog = log ??= new FileLog(AppPaths.Logs);
         var health = new WingetHealthService(new WindowsSystemProbe());
         var repair = new WingetRepairService(new WindowsRepairActions(), health, fileLog);
         var client = new ComWingetClient(new WingetComFactory());
@@ -95,9 +122,9 @@ public partial class App : Application
 
         return new Composition(
             shell,
-            new SearchViewModel(client, queue),
-            new UpdatesViewModel(client, queue),
-            new InstalledViewModel(client, queue, dialogs, () => shell.WingetVersion),
+            new SearchViewModel(client, queue, fileLog),
+            new UpdatesViewModel(client, queue, fileLog),
+            new InstalledViewModel(client, queue, dialogs, () => shell.WingetVersion, fileLog),
             new SettingsViewModel(shell, fileLog, dialogs, AppPaths.SettingsFile),
             new OperationListViewModel(queue));
     }
