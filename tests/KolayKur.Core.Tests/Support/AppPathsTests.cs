@@ -44,6 +44,16 @@ public sealed class AppPathsTests
     }
 
     [Fact]
+    public void Root_ignores_override_outside_temp()
+    {
+        var expected = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KolayKur");
+        var outside = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "KolayKurNotTemp");
+
+        WithOverride(outside, () => Assert.Equal(expected, AppPaths.Root));
+    }
+
+    [Fact]
     public void Root_ignores_relative_override()
     {
         var expected = Path.Combine(
