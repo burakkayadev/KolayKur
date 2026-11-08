@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App_Title" xml:space="preserve">
+    <value>KolayKur</value>
+  </data>
+  <data name="Menu_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Menu_Updates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Menu_Installed" xml:space="preserve">
+    <value>Installed apps</value>
+  </data>
+  <data name="Menu_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Page_ComingSoon" xml:space="preserve">
+    <value>This page will be ready soon.</value>
+  </data>
+  <data name="OperationList_Title" xml:space="preserve">
+    <value>Operations</value>
+  </data>
+  <data name="OperationList_Empty" xml:space="preserve">
+    <value>No operations yet.</value>
+  </data>
+  <data name="Startup_Checking" xml:space="preserve">
+    <value>Checking winget...</value>
+  </data>
+  <data name="Startup_Failed" xml:space="preserve">
+    <value>An unexpected error occurred while checking winget. Details are in the log file.</value>
+  </data>
+  <data name="Close_Confirm" xml:space="preserve">
+    <value>Operations are still running. If you close now they may be left unfinished. Do you want to close anyway?</value>
+  </data>
+  <data name="License_Notice" xml:space="preserve">
+    <value>Pressing "Install" means you accept that app's license. The program reminds you of this only on the first launch.</value>
+  </data>
+  <data name="Repair_Title" xml:space="preserve">
+    <value>Winget needs to be repaired</value>
+  </data>
+  <data name="Repair_Intro" xml:space="preserve">
+    <value>Winget is not working, so apps cannot be searched, installed or updated.</value>
+  </data>
+  <data name="Repair_Reason_NotInstalled" xml:space="preserve">
+    <value>App Installer is not installed on this computer.</value>
+  </data>
+  <data name="Repair_Reason_DependencyBroken" xml:space="preserve">
+    <value>A component that App Installer needs is missing or out of date.</value>
+  </data>
+  <data name="Repair_Reason_RegistrationBroken" xml:space="preserve">
+    <value>App Installer and its components are present, but the App Installer registration is broken.</value>
+  </data>
+  <data name="Repair_Note" xml:space="preserve">
+    <value>The required files are downloaded from Microsoft's official winget-cli release and verified. Windows may ask for administrator permission.</value>
+  </data>
+  <data name="Repair_Action" xml:space="preserve">
+    <value>Repair</value>
+  </data>
+  <data name="Repair_Working" xml:space="preserve">
+    <value>Repairing, please wait...</value>
+  </data>
+  <data name="Repair_Failed" xml:space="preserve">
+    <value>The repair could not be completed or winget is still not working. Details are in the log file. You can try again in a moment.</value>
+  </data>
+  <data name="Repair_VerificationFailed" xml:space="preserve">
+    <value>The downloaded file was incomplete or corrupt and has been deleted. Press "Repair" again to download it again.</value>
+  </data>
+  <data name="Dialog_ListFilter" xml:space="preserve">
+    <value>Package list (*.json)|*.json</value>
+  </data>
+</root>

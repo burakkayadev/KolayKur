@@ -1,12 +1,108 @@
 ﻿<Window x:Class="KolayKur.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:KolayKur.App"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core"
+        xmlns:vm="clr-namespace:KolayKur.Core.ViewModels;assembly=KolayKur.Core"
+        xmlns:views="clr-namespace:KolayKur.App.Views"
+        Title="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}"
+        Width="1000" Height="680" MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style x:Key="PageTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentPage}" Value="Search">
+                    <Setter Property="Text" Value="{Binding [Menu_Search], Source={x:Static loc:Loc.Instance}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentPage}" Value="Updates">
+                    <Setter Property="Text" Value="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentPage}" Value="Installed">
+                    <Setter Property="Text" Value="{Binding [Menu_Installed], Source={x:Static loc:Loc.Instance}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentPage}" Value="Settings">
+                    <Setter Property="Text" Value="{Binding [Menu_Settings], Source={x:Static loc:Loc.Instance}}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
+        <Style x:Key="PlaceholderPanelStyle" TargetType="StackPanel">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentPage}" Value="Repair">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="RepairHostStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentPage}" Value="Repair">
+                    <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="MenuItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ListBox Grid.Column="0" BorderThickness="0,0,1,0"
+                     IsEnabled="{Binding IsMenuEnabled}"
+                     SelectedValuePath="Tag"
+                     SelectedValue="{Binding CurrentPage}"
+                     ItemContainerStyle="{StaticResource MenuItemStyle}">
+                <ListBoxItem Tag="{x:Static vm:ShellPage.Search}"
+                             Content="{Binding [Menu_Search], Source={x:Static loc:Loc.Instance}}" />
+                <ListBoxItem Tag="{x:Static vm:ShellPage.Updates}"
+                             Content="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
+                <ListBoxItem Tag="{x:Static vm:ShellPage.Installed}"
+                             Content="{Binding [Menu_Installed], Source={x:Static loc:Loc.Instance}}" />
+                <ListBoxItem Tag="{x:Static vm:ShellPage.Settings}"
+                             Content="{Binding [Menu_Settings], Source={x:Static loc:Loc.Instance}}" />
+            </ListBox>
+
+            <Grid Grid.Column="1" Margin="24">
+                <!-- Görev 7 ve 8 bu yer tutucuyu gerçek sayfalarla değiştirir. -->
+                <StackPanel Style="{StaticResource PlaceholderPanelStyle}">
+                    <TextBlock Style="{StaticResource PageTitleStyle}" />
+                    <TextBlock Margin="0,8,0,0" Foreground="Gray"
+                               Text="{Binding [Page_ComingSoon], Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+
+                <Grid Style="{StaticResource RepairHostStyle}">
+                    <views:RepairPage DataContext="{Binding Repair}" />
+                </Grid>
+
+                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"
+                           Text="{Binding [Startup_Checking], Source={x:Static loc:Loc.Instance}}"
+                           Visibility="{Binding IsChecking, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </Grid>
+
+        <!-- Alt alan: işlem listesi (Görev 7'de gerçek liste gelir). -->
+        <Border Grid.Row="1" Height="150" BorderBrush="LightGray" BorderThickness="0,1,0,0" Padding="16,10">
+            <StackPanel>
+                <TextBlock FontWeight="SemiBold"
+                           Text="{Binding [OperationList_Title], Source={x:Static loc:Loc.Instance}}" />
+                <TextBlock Margin="0,6,0,0" Foreground="Gray"
+                           Text="{Binding [OperationList_Empty], Source={x:Static loc:Loc.Instance}}" />
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
