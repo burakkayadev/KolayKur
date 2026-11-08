@@ -285,4 +285,22 @@
   <data name="Reason_Unexpected" xml:space="preserve">
     <value>An unexpected error occurred. Details are in the log file.</value>
   </data>
+  <data name="Installed_ConfirmImport" xml:space="preserve">
+    <value>{0} apps will be installed: {1}
+
+Do you want to continue?</value>
+  </data>
+  <data name="Installed_ImportMore" xml:space="preserve">
+    <value>(+{0} more)</value>
+  </data>
+  <data name="Installed_ImportEmpty" xml:space="preserve">
+    <value>The file contains no apps to install.</value>
+  </data>
+  <data name="Installed_ExportDone" xml:space="preserve">
+    <value>{0} apps were saved:
+{1}</value>
+  </data>
+  <data name="Error_ListTooLarge" xml:space="preserve">
+    <value>The list file is too large (at most 1 MB and 500 apps); nothing was installed.</value>
+  </data>
 </root>

@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KolayKur.Core.Models;
 using KolayKur.Core.Queue;
+using KolayKur.Core.Support;
 using KolayKur.Core.Winget;
 
 namespace KolayKur.Core.ViewModels;
@@ -16,6 +16,7 @@ public sealed partial class UpdatesViewModel : ObservableObject
 {
     private readonly IWingetClient client;
     private readonly OperationQueue queue;
+    private readonly FileLog? log;
 
     // Yalnızca arayüz iş parçacığında okunup yazılır; eski kaynaklar bilerek Dispose edilmez (bkz. SearchViewModel).
     private CancellationTokenSource? currentLoad;
@@ -27,10 +28,11 @@ public sealed partial class UpdatesViewModel : ObservableObject
     [ObservableProperty]
     private bool isLoading;
 
-    public UpdatesViewModel(IWingetClient client, OperationQueue queue)
+    public UpdatesViewModel(IWingetClient client, OperationQueue queue, FileLog? log = null)
     {
         this.client = client;
         this.queue = queue;
+        this.log = log;
         queue.BatchCompleted += OnBatchCompleted;
     }
 
@@ -68,8 +70,8 @@ public sealed partial class UpdatesViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            // Yutulmaz: ayrıntı izleme çıktısına gider, kullanıcıya genel hata ve "Tekrar dene" gösterilir.
-            Trace.TraceError($"KolayKur güncelleme listesi yüklenemedi: {ex}");
+            // Yutulmaz: ayrıntı günlüğe ve izleme çıktısına gider, kullanıcıya genel hata ve "Tekrar dene" gösterilir.
+            log.ReportUnexpected("Güncelleme listesi yüklenemedi.", ex);
             Fail(load, SearchViewModel.GenericErrorKey);
         }
         finally

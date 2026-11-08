@@ -29,7 +29,10 @@ public abstract class QueueTestBase : IDisposable
         return Path.Combine(directory, name);
     }
 
-    protected OperationQueue CreateQueue(IWingetClient client) => new(client, new FileLog(logDirectory));
+    protected OperationQueue CreateQueue(IWingetClient client) => new(client, TestLog);
+
+    /// <summary>Test için geçici günlük (test bitince silinir); günlüğe yazılanı okumak için <see cref="FileLog.CurrentFile"/>.</summary>
+    protected FileLog TestLog => new(logDirectory);
 
     protected static PackageInfo Pkg(string id) => new(id, id, "Yayıncı", "1.0", "2.0");
 

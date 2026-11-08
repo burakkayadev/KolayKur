@@ -7,8 +7,11 @@ using KolayKur.Core.Models;
 namespace KolayKur.Core.Lists;
 
 /// <summary>Paket listesi dosyası okunamıyor: JSON bozuk veya <c>winget export</c> şemasına uymuyor.</summary>
-public sealed class PackageListFormatException(string message, Exception? innerException = null)
+public class PackageListFormatException(string message, Exception? innerException = null)
     : Exception(message, innerException);
+
+/// <summary>Liste dosyası çok büyük (boyut veya paket sayısı sınırı aşıldı); okunmaz, hiçbir şey kurulmaz.</summary>
+public sealed class PackageListTooLargeException(string message) : PackageListFormatException(message);
 
 /// <summary>
 /// Paket listesi dosyası. Biçim, <c>winget export</c> çıktısının şemasıdır (<c>winget import -i dosya</c> bunu okur):
@@ -16,6 +19,12 @@ public sealed class PackageListFormatException(string message, Exception? innerE
 /// </summary>
 public static class PackageListFile
 {
+    /// <summary>Okunacak liste dosyasının en büyük boyutu (bayt); gerçek listeler birkaç yüz KB bile tutmaz.</summary>
+    public const int MaxFileBytes = 1024 * 1024;
+
+    /// <summary>Bir listeden kurulabilecek en çok farklı paket sayısı.</summary>
+    public const int MaxPackages = 500;
+
     private const string SchemaUrl = "https://aka.ms/winget-packages.schema.2.0.json";
     private const string SourceArgument = "https://cdn.winget.microsoft.com/cache";
     private const string SourceIdentifier = "Microsoft.Winget.Source_8wekyb3d8bbwe";
@@ -76,12 +85,19 @@ public static class PackageListFile
     }
 
     /// <summary>
-    /// Dosyadaki tüm kaynakların paket kimliklerini sırasıyla döndürür.
-    /// Geçersiz JSON veya şemaya uymayan içerik <see cref="PackageListFormatException"/> atar; dosya okunamıyorsa
-    /// <see cref="IOException"/> / <see cref="UnauthorizedAccessException"/> çağırana yansır.
+    /// Dosyadaki tüm kaynakların paket kimliklerini sırasıyla döndürür; kimlikler kırpılır, büyük/küçük harf ayırmadan
+    /// yinelenenler atılır. Geçersiz JSON veya şemaya uymayan içerik <see cref="PackageListFormatException"/> atar;
+    /// <see cref="MaxFileBytes"/>'tan büyük dosya (okunmadan) ya da <see cref="MaxPackages"/>'tan çok farklı kimlik
+    /// <see cref="PackageListTooLargeException"/> atar. Dosya okunamıyorsa <see cref="IOException"/> /
+    /// <see cref="UnauthorizedAccessException"/> çağırana yansır.
     /// </summary>
     public static IReadOnlyList<string> Load(string path)
     {
+        if (new FileInfo(path).Length > MaxFileBytes)
+        {
+            throw new PackageListTooLargeException($"Liste dosyası {MaxFileBytes} bayttan büyük.");
+        }
+
         var text = File.ReadAllText(path);
         try
         {
@@ -103,6 +119,7 @@ public static class PackageListFile
         }
 
         var identifiers = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var source in sources.EnumerateArray())
         {
             if (source.ValueKind != JsonValueKind.Object || !source.TryGetProperty("Packages", out var packages)
@@ -113,7 +130,18 @@ public static class PackageListFile
 
             foreach (var package in packages.EnumerateArray())
             {
-                identifiers.Add(ReadIdentifier(package));
+                var identifier = ReadIdentifier(package);
+                if (!seen.Add(identifier))
+                {
+                    continue;
+                }
+
+                if (seen.Count > MaxPackages)
+                {
+                    throw new PackageListTooLargeException($"Liste dosyasında {MaxPackages} paketten fazla kimlik var.");
+                }
+
+                identifiers.Add(identifier);
             }
         }
 
@@ -128,7 +156,7 @@ public static class PackageListFile
             && value.GetString() is { } identifier
             && !string.IsNullOrWhiteSpace(identifier))
         {
-            return identifier;
+            return identifier.Trim();
         }
 
         throw new PackageListFormatException("Liste dosyasında 'PackageIdentifier' alanı eksik veya boş bir paket var.");

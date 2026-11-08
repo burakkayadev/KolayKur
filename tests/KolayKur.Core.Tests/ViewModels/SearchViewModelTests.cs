@@ -169,4 +169,17 @@ public sealed class SearchViewModelTests : QueueTestBase
         // Assert
         Assert.Equal("Error_Generic", viewModel.ErrorKey);
     }
+
+    [Fact]
+    public async Task Unexpected_error_is_written_to_the_log_file()
+    {
+        var viewModel = new SearchViewModel(client, CreateQueue(client), TestLog);
+        client.ListException = new InvalidOperationException("arama-patladi-xyz");
+        viewModel.Query = "alpha";
+
+        await viewModel.SearchCommand.ExecuteAsync(null);
+
+        Assert.Equal("Error_Generic", viewModel.ErrorKey);
+        Assert.Contains("arama-patladi-xyz", File.ReadAllText(TestLog.CurrentFile), StringComparison.Ordinal);
+    }
 }

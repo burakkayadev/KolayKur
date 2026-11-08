@@ -166,4 +166,16 @@ public sealed class UpdatesViewModelTests : QueueTestBase
         public Task<OperationOutcome> UninstallAsync(string id, IProgress<OperationProgress> progress, CancellationToken ct) =>
             throw new NotSupportedException();
     }
+
+    [Fact]
+    public async Task Unexpected_error_is_written_to_the_log_file()
+    {
+        var viewModel = new UpdatesViewModel(client, CreateQueue(client), TestLog);
+        client.ListException = new InvalidOperationException("guncelleme-patladi-xyz");
+
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal("Error_Generic", viewModel.ErrorKey);
+        Assert.Contains("guncelleme-patladi-xyz", File.ReadAllText(TestLog.CurrentFile), StringComparison.Ordinal);
+    }
 }

@@ -28,4 +28,14 @@ public static class FileLogExtensions
             Trace.TraceError($"KolayKur günlüğüne yazılamadı: {logEx}");
         }
     }
+
+    /// <summary>
+    /// Beklenmeyen bir hatayı hem izleme çıktısına (hata ayıklama, günlük yoksa tek iz) hem de günlük dosyasına yazar.
+    /// Yutulmaz: çağıran ayrıca kullanıcıya gösterilecek hata durumunu ayarlar.
+    /// </summary>
+    public static void ReportUnexpected(this FileLog? log, string message, Exception ex)
+    {
+        Trace.TraceError($"KolayKur: {message} {ex}");
+        log.TryError(message, ex);
+    }
 }

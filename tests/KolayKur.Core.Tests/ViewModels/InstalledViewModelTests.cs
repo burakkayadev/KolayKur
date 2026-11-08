@@ -11,7 +11,8 @@ public sealed class InstalledViewModelTests : QueueTestBase
 {
     private const string Version = "1.29.380";
 
-    private readonly FakeDialogService dialogs = new();
+    // Varsayılan "evet": içe aktarma ve kaldırma onayı veren testler yalnızca asıl davranışa odaklanır.
+    private readonly FakeDialogService dialogs = new() { ConfirmResult = true };
 
     private readonly FakeWingetClient client = new()
     {
@@ -191,9 +192,9 @@ public sealed class InstalledViewModelTests : QueueTestBase
     }
 
     [Fact]
-    public async Task Export_of_only_non_exportable_entries_writes_an_empty_valid_list()
+    public async Task Export_is_disabled_when_nothing_is_exportable_and_writes_nothing()
     {
-        // Arrange
+        // Arrange: yalnızca winget kaynağı olmayan kayıtlar var; boş bir dosya yazılmamalı.
         client.Installed = [Pkg(@"ARP\Machine\X64\Foo"), Pkg(@"MSIX\Bar_1.0_x64__abc")];
         var path = TempFile("liste.json");
         dialogs.SaveFilePath = path;
@@ -201,12 +202,74 @@ public sealed class InstalledViewModelTests : QueueTestBase
         await viewModel.LoadCommand.ExecuteAsync(null);
 
         // Act
+        var canExecute = viewModel.ExportCommand.CanExecute(null);
         viewModel.ExportCommand.Execute(null);
 
-        // Assert: geçerli dosya, boş paket listesi; Load boş liste döndürür (kural: boş Packages geçerlidir).
-        Assert.Empty(PackageListFile.Load(path));
-        Assert.Null(viewModel.ErrorKey);
+        // Assert
+        Assert.False(canExecute);
+        Assert.False(File.Exists(path));
+        Assert.Empty(dialogs.Informed);
         Assert.Empty(queue.Items);
+    }
+
+    [Fact]
+    public async Task Export_is_disabled_while_loading_and_after_a_failed_load()
+    {
+        // Arrange: yükleme sürerken liste boş/eksik olabilir.
+        var manual = new ManualInstalledClient();
+        var (viewModel, _) = Create(manual);
+        var canExecuteChanged = 0;
+        viewModel.ExportCommand.CanExecuteChanged += (_, _) => canExecuteChanged++;
+        Assert.False(viewModel.ExportCommand.CanExecute(null));
+
+        // Act + Assert: yükleme bitince etkinleşir.
+        var loading = viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.False(viewModel.ExportCommand.CanExecute(null));
+        manual.Complete(0, [Pkg("Git.Git")]);
+        await loading;
+        Assert.True(viewModel.ExportCommand.CanExecute(null));
+        Assert.True(canExecuteChanged > 0);
+
+        // Başarısız yeniden yükleme listeyi temizler: tekrar devre dışı.
+        var failing = viewModel.LoadCommand.ExecuteAsync(null);
+        manual.Fail(1, new CatalogUnavailableException("offline"));
+        await failing;
+        Assert.Empty(viewModel.Packages);
+        Assert.False(viewModel.ExportCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Export_tells_how_many_apps_were_saved_and_where()
+    {
+        // Arrange: ARP\ kaydı yazılmaz, sayıya da girmez.
+        client.Installed = [Pkg("Git.Git"), Pkg(@"ARP\Machine\X64\Foo"), Pkg("7zip.7zip")];
+        var path = TempFile("liste.json");
+        dialogs.SaveFilePath = path;
+        var (viewModel, _) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        // Act
+        viewModel.ExportCommand.Execute(null);
+
+        // Assert
+        var message = Assert.Single(dialogs.Informed);
+        Assert.Contains("2", message, StringComparison.Ordinal);
+        Assert.Contains(path, message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Export_failure_does_not_claim_success()
+    {
+        var blocker = TempFile("engel");
+        await File.WriteAllTextAsync(blocker, "x");
+        dialogs.SaveFilePath = Path.Combine(blocker, "liste.json");
+        var (viewModel, _) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        viewModel.ExportCommand.Execute(null);
+
+        Assert.Equal("Error_ListSave", viewModel.ErrorKey);
+        Assert.Empty(dialogs.Informed);
     }
 
     [Fact]
@@ -329,6 +392,119 @@ public sealed class InstalledViewModelTests : QueueTestBase
     }
 
     [Fact]
+    public async Task Import_asks_first_with_the_count_and_the_first_names_then_installs()
+    {
+        // Arrange: 7 uygulama; ilk 5'i adıyla, kalanı sayıyla gösterilir.
+        var ids = Enumerable.Range(1, 7).Select(i => $"Vendor.App{i}").ToArray();
+        var path = TempFile("liste.json");
+        PackageListFile.Save(path, ids.Select(Pkg), Version);
+        dialogs.OpenFilePath = path;
+        var (viewModel, queue) = Create();
+
+        // Act
+        viewModel.ImportCommand.Execute(null);
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+
+        // Assert
+        var question = Assert.Single(dialogs.Confirmed);
+        Assert.Contains("7", question, StringComparison.Ordinal);
+        Assert.All(ids.Take(5), id => Assert.Contains(id, question, StringComparison.Ordinal));
+        Assert.DoesNotContain("Vendor.App6", question, StringComparison.Ordinal);
+        Assert.Contains("+2", question, StringComparison.Ordinal);
+        Assert.Equal(7, queue.Items.Count);
+    }
+
+    [Fact]
+    public void Import_declined_starts_nothing()
+    {
+        // Arrange
+        var path = TempFile("liste.json");
+        PackageListFile.Save(path, [Pkg("Git.Git"), Pkg("7zip.7zip")], Version);
+        dialogs.OpenFilePath = path;
+        dialogs.ConfirmResult = false;
+        var (viewModel, queue) = Create();
+
+        // Act
+        viewModel.ImportCommand.Execute(null);
+
+        // Assert
+        Assert.Single(dialogs.Confirmed);
+        Assert.Empty(queue.Items);
+        Assert.Empty(client.Calls);
+        Assert.Null(viewModel.ErrorKey);
+    }
+
+    [Fact]
+    public async Task Import_trims_ids_and_installs_each_app_once()
+    {
+        // Arrange
+        var path = TempFile("liste.json");
+        await File.WriteAllTextAsync(
+            path,
+            """{"Sources": [{"Packages": [{"PackageIdentifier": " Git.Git "}, {"PackageIdentifier": "git.git"}]}]}""");
+        dialogs.OpenFilePath = path;
+        var (viewModel, queue) = Create();
+
+        // Act
+        viewModel.ImportCommand.Execute(null);
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+
+        // Assert
+        Assert.Equal([new FakeCall(OperationKind.Install, "Git.Git")], client.Calls);
+        Assert.Contains("1", Assert.Single(dialogs.Confirmed), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Import_of_too_large_a_list_is_refused_with_its_own_message()
+    {
+        // Arrange
+        var path = TempFile("buyuk.json");
+        var ids = Enumerable.Range(0, PackageListFile.MaxPackages + 1).Select(i => Pkg($"Vendor.App{i}"));
+        PackageListFile.Save(path, ids, Version);
+        dialogs.OpenFilePath = path;
+        var (viewModel, queue) = Create();
+
+        // Act
+        viewModel.ImportCommand.Execute(null);
+
+        // Assert
+        Assert.Equal("Error_ListTooLarge", viewModel.ErrorKey);
+        Assert.Empty(dialogs.Confirmed);
+        Assert.Empty(queue.Items);
+        Assert.Empty(client.Calls);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public void Import_of_an_empty_list_tells_the_user_instead_of_doing_nothing_silently()
+    {
+        var path = TempFile("bos.json");
+        PackageListFile.Save(path, [], Version);
+        dialogs.OpenFilePath = path;
+        var (viewModel, queue) = Create();
+
+        viewModel.ImportCommand.Execute(null);
+
+        Assert.Single(dialogs.Informed);
+        Assert.Empty(dialogs.Confirmed);
+        Assert.Empty(queue.Items);
+    }
+
+    [Fact]
+    public async Task Unexpected_load_error_is_written_to_the_log_file()
+    {
+        var (viewModel, _) = Create();
+        var withLog = new InstalledViewModel(client, CreateQueue(client), dialogs, () => Version, TestLog);
+        client.ListException = new InvalidOperationException("yuklenemeyen-liste-hatasi");
+
+        await withLog.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal("Error_Generic", withLog.ErrorKey);
+        Assert.Contains("yuklenemeyen-liste-hatasi", File.ReadAllText(TestLog.CurrentFile), StringComparison.Ordinal);
+        Assert.NotNull(viewModel);
+    }
+
+    [Fact]
     public async Task Import_unknown_package_continues()
     {
         // Arrange: ikinci paket katalogda yok.
@@ -354,6 +530,8 @@ public sealed class InstalledViewModelTests : QueueTestBase
         private readonly List<TaskCompletionSource<IReadOnlyList<PackageInfo>>> pending = [];
 
         public void Complete(int callIndex, IReadOnlyList<PackageInfo> result) => pending[callIndex].SetResult(result);
+
+        public void Fail(int callIndex, Exception failure) => pending[callIndex].SetException(failure);
 
         public Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct)
         {

@@ -285,4 +285,22 @@
   <data name="Reason_Unexpected" xml:space="preserve">
     <value>Beklenmeyen bir hata oluştu. Ayrıntılar günlük dosyasında.</value>
   </data>
+  <data name="Installed_ConfirmImport" xml:space="preserve">
+    <value>{0} uygulama kurulacak: {1}
+
+Devam edilsin mi?</value>
+  </data>
+  <data name="Installed_ImportMore" xml:space="preserve">
+    <value>(+{0} daha)</value>
+  </data>
+  <data name="Installed_ImportEmpty" xml:space="preserve">
+    <value>Dosyada kurulacak uygulama yok.</value>
+  </data>
+  <data name="Installed_ExportDone" xml:space="preserve">
+    <value>{0} uygulama kaydedildi:
+{1}</value>
+  </data>
+  <data name="Error_ListTooLarge" xml:space="preserve">
+    <value>Liste dosyası çok büyük (en fazla 1 MB ve 500 uygulama), hiçbir uygulama kurulmadı.</value>
+  </data>
 </root>

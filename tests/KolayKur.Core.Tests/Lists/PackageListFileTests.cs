@@ -152,4 +152,58 @@ public sealed class PackageListFileTests : IDisposable
         Assert.Empty(source.GetProperty("Packages").EnumerateArray());
         Assert.Empty(PackageListFile.Load(path));
     }
+
+    [Fact]
+    public void Load_trims_ids_and_drops_case_insensitive_duplicates_keeping_first_order()
+    {
+        var path = FileWith("""
+            {"Sources": [
+              {"Packages": [
+                {"PackageIdentifier": "  Git.Git "},
+                {"PackageIdentifier": "git.git"},
+                {"PackageIdentifier": "7zip.7zip\t"}]},
+              {"Packages": [
+                {"PackageIdentifier": "GIT.GIT"},
+                {"PackageIdentifier": "VideoLAN.VLC"}]}]}
+            """);
+
+        Assert.Equal(["Git.Git", "7zip.7zip", "VideoLAN.VLC"], PackageListFile.Load(path));
+    }
+
+    [Fact]
+    public void Load_rejects_a_file_larger_than_one_megabyte_without_reading_it()
+    {
+        var path = FileWith(new string(' ', PackageListFile.MaxFileBytes + 1));
+
+        var ex = Assert.Throws<PackageListTooLargeException>(() => PackageListFile.Load(path));
+
+        Assert.IsAssignableFrom<PackageListFormatException>(ex);
+    }
+
+    [Fact]
+    public void Load_rejects_more_than_the_maximum_number_of_distinct_ids()
+    {
+        var path = FileWith(ListOf(PackageListFile.MaxPackages + 1));
+
+        Assert.Throws<PackageListTooLargeException>(() => PackageListFile.Load(path));
+    }
+
+    [Fact]
+    public void Load_accepts_exactly_the_maximum_and_does_not_count_duplicates()
+    {
+        var exact = FileWith(ListOf(PackageListFile.MaxPackages));
+        Assert.Equal(PackageListFile.MaxPackages, PackageListFile.Load(exact).Count);
+
+        var withDuplicates = FileWith(ListOf(PackageListFile.MaxPackages, repeatFirst: 50));
+        Assert.Equal(PackageListFile.MaxPackages, PackageListFile.Load(withDuplicates).Count);
+    }
+
+    private static string ListOf(int distinct, int repeatFirst = 0)
+    {
+        var ids = Enumerable.Range(0, distinct).Select(i => $"Vendor.App{i}")
+            .Concat(Enumerable.Repeat("Vendor.App0", repeatFirst));
+        return "{\"Sources\": [{\"Packages\": ["
+            + string.Join(",", ids.Select(id => $"{{\"PackageIdentifier\": \"{id}\"}}"))
+            + "]}]}";
+    }
 }

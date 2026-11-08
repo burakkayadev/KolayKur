@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KolayKur.Core.Models;
 using KolayKur.Core.Queue;
+using KolayKur.Core.Support;
 using KolayKur.Core.Winget;
 
 namespace KolayKur.Core.ViewModels;
@@ -21,7 +21,7 @@ public sealed partial class SelectablePackage(PackageInfo package) : ObservableO
 /// Ara sayfası. Komutlar arayüz iş parçacığında çalışır: sonuçlar <c>await</c> sonrasında aynı bağlamda yazılır.
 /// Yeni arama eskisini iptal eder; iptale saygı göstermeyen bir istemcide bile eski sonuç yenisinin üstüne yazılmaz.
 /// </summary>
-public sealed partial class SearchViewModel(IWingetClient client, OperationQueue queue) : ObservableObject
+public sealed partial class SearchViewModel(IWingetClient client, OperationQueue queue, FileLog? log = null) : ObservableObject
 {
     public const string NoInternetKey = "Error_NoInternet";
     public const string GenericErrorKey = "Error_Generic";
@@ -106,8 +106,8 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
         }
         catch (Exception ex)
         {
-            // Yutulmaz: ayrıntı izleme çıktısına gider, kullanıcıya genel hata ve "Tekrar dene" gösterilir.
-            Trace.TraceError($"KolayKur arama başarısız: {ex}");
+            // Yutulmaz: ayrıntı günlüğe ve izleme çıktısına gider, kullanıcıya genel hata ve "Tekrar dene" gösterilir.
+            log.ReportUnexpected("Arama başarısız.", ex);
             Fail(search, GenericErrorKey);
         }
         finally
