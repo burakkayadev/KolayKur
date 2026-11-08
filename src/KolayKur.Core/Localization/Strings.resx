@@ -258,4 +258,7 @@
   <data name="Settings_RepairCheckFailed" xml:space="preserve">
     <value>Winget durumu denetlenemedi. Biraz sonra tekrar deneyin; ayrıntı günlük dosyasındadır.</value>
   </data>
+  <data name="Repair_DownloadStalled" xml:space="preserve">
+    <value>İndirme takıldı: uzun süredir veri gelmiyor. İnternet bağlantınızı kontrol edip "Onar" düğmesine yeniden basın; indirme baştan başlar.</value>
+  </data>
 </root>

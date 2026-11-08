@@ -18,6 +18,10 @@ public sealed class FakeRepairActions : IRepairActions
 
     public List<string> Calls { get; } = [];
 
+    public int CleanupCount { get; private set; }
+
+    public Exception? CleanupException { get; set; }
+
     public List<IReadOnlyList<string>> AddedDependencies { get; } = [];
 
     public async Task<WingetRelease> GetLatestReleaseAsync(CancellationToken ct)
@@ -57,5 +61,14 @@ public sealed class FakeRepairActions : IRepairActions
     {
         Calls.Add("Register");
         await Task.Yield();
+    }
+
+    public void CleanupDownloads()
+    {
+        CleanupCount++;
+        if (CleanupException is not null)
+        {
+            throw CleanupException;
+        }
     }
 }

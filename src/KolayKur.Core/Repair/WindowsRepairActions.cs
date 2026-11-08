@@ -17,21 +17,41 @@ public sealed class WindowsRepairActions : IRepairActions
     private const int Sha256HexLength = 64;
     private const int CopyBufferSize = 81920;
 
-    private static readonly HttpClient Http = CreateHttpClient();
+    /// <summary>Bu süre boyunca hiç bayt gelmezse indirme takılmış sayılır ve iptal edilir.</summary>
+    private static readonly TimeSpan DefaultStallTimeout = TimeSpan.FromSeconds(60);
+
+    private static readonly HttpClient SharedHttp = CreateHttpClient();
+
+    private readonly HttpClient http;
+    private readonly TimeSpan stallTimeout;
+    private readonly string downloadsDirectory;
+
+    public WindowsRepairActions()
+        : this(SharedHttp, DefaultStallTimeout, AppPaths.Downloads)
+    {
+    }
+
+    /// <summary>Testler için: HTTP istemcisi, takılma süresi ve indirme klasörü dışarıdan verilir.</summary>
+    internal WindowsRepairActions(HttpClient http, TimeSpan stallTimeout, string downloadsDirectory)
+    {
+        this.http = http;
+        this.stallTimeout = stallTimeout;
+        this.downloadsDirectory = downloadsDirectory;
+    }
 
     public async Task<WingetRelease> GetLatestReleaseAsync(CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, LatestReleaseUrl);
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
-        using var response = await Http.SendAsync(request, ct);
+        using var response = await http.SendAsync(request, ct);
         response.EnsureSuccessStatusCode();
         return ParseRelease(await response.Content.ReadAsStringAsync(ct));
     }
 
     public async Task<string> DownloadAsync(RepairFile file, IProgress<double> progress, CancellationToken ct)
     {
-        Directory.CreateDirectory(AppPaths.Downloads);
-        var finalPath = Path.Combine(AppPaths.Downloads, Path.GetFileName(file.Name));
+        Directory.CreateDirectory(downloadsDirectory);
+        var finalPath = Path.Combine(downloadsDirectory, Path.GetFileName(file.Name));
         var partPath = finalPath + ".part";
 
         try
@@ -192,24 +212,53 @@ public sealed class WindowsRepairActions : IRepairActions
             ? value.GetString()
             : null;
 
-    private static async Task CopyToFileAsync(
-        RepairFile file, string path, IProgress<double> progress, CancellationToken ct)
+    /// <summary>
+    /// Dosyayı indirir. <c>ResponseHeadersRead</c> ile <see cref="HttpClient.Timeout"/> gövdeyi kapsamadığı için ayrı bir
+    /// bekçi vardır: <see cref="stallTimeout"/> boyunca hiç bayt gelmezse (her parçada süre sıfırlanır) indirme iptal edilir
+    /// ve <see cref="DownloadStalledException"/> atılır. Çağıranın kendi iptali olduğu gibi yansır.
+    /// </summary>
+    private async Task CopyToFileAsync(RepairFile file, string path, IProgress<double> progress, CancellationToken ct)
     {
-        using var response = await Http.GetAsync(file.Url, HttpCompletionOption.ResponseHeadersRead, ct);
+        using var stall = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        stall.CancelAfter(stallTimeout);
+        try
+        {
+            await CopyCoreAsync(file, path, progress, stall, ct);
+        }
+        catch (OperationCanceledException ex) when (stall.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            throw new DownloadStalledException(file.Name, ex);
+        }
+    }
+
+    private async Task CopyCoreAsync(
+        RepairFile file, string path, IProgress<double> progress, CancellationTokenSource stall, CancellationToken ct)
+    {
+        using var response = await http.GetAsync(file.Url, HttpCompletionOption.ResponseHeadersRead, stall.Token);
         response.EnsureSuccessStatusCode();
 
-        await using var source = await response.Content.ReadAsStreamAsync(ct);
+        await using var source = await response.Content.ReadAsStreamAsync(stall.Token);
         await using var target = new FileStream(
             path, FileMode.Create, FileAccess.Write, FileShare.None, CopyBufferSize, useAsync: true);
 
         var buffer = new byte[CopyBufferSize];
         long copied = 0;
         int read;
-        while ((read = await source.ReadAsync(buffer, ct)) > 0)
+        while ((read = await source.ReadAsync(buffer, stall.Token)) > 0)
         {
-            await target.WriteAsync(buffer.AsMemory(0, read), ct);
+            stall.CancelAfter(stallTimeout);
+            await target.WriteAsync(buffer.AsMemory(0, read), stall.Token);
             copied += read;
             progress.Report(Math.Min(1.0, (double)copied / file.Size));
+        }
+    }
+
+    /// <summary>İndirme klasörünü (indirilen dosyalar ve çıkarılan bağımlılık klasörleri) siler; klasör yoksa bir şey yapmaz.</summary>
+    public void CleanupDownloads()
+    {
+        if (Directory.Exists(downloadsDirectory))
+        {
+            Directory.Delete(downloadsDirectory, recursive: true);
         }
     }
 

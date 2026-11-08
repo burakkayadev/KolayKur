@@ -79,6 +79,41 @@ public sealed class WingetRepairServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Successful_repair_cleans_up_the_downloads_once()
+    {
+        var actions = new FakeRepairActions();
+
+        await RepairAsync(actions, new WingetDiagnosis(WingetState.NotInstalled, null, "yok"));
+
+        Assert.Equal(1, actions.CleanupCount);
+    }
+
+    [Fact]
+    public async Task Repair_that_leaves_winget_broken_keeps_the_downloads()
+    {
+        var actions = new FakeRepairActions();
+        var stillBroken = new FakeSystemProbe { WingetResult = new ProbeResult(false, "", "çalışmıyor") };
+        var service = new WingetRepairService(actions, new WingetHealthService(stillBroken), new FileLog(logDirectory));
+
+        var result = await service.RepairAsync(
+            new WingetDiagnosis(WingetState.NotInstalled, null, "yok"), new Progress<RepairStep>(), CancellationToken.None);
+
+        Assert.NotEqual(WingetState.Healthy, result.State);
+        Assert.Equal(0, actions.CleanupCount);
+    }
+
+    [Fact]
+    public async Task Cleanup_failure_is_logged_and_does_not_fail_the_repair()
+    {
+        var actions = new FakeRepairActions { CleanupException = new IOException("dosya kilitli-xyz") };
+
+        var result = await RepairAsync(actions, new WingetDiagnosis(WingetState.NotInstalled, null, "yok"));
+
+        Assert.Equal(WingetState.Healthy, result.State);
+        Assert.Contains("dosya kilitli-xyz", File.ReadAllText(new FileLog(logDirectory).CurrentFile), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RegistrationBroken_only_registers()
     {
         var actions = new FakeRepairActions();

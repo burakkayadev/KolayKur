@@ -15,4 +15,12 @@ public interface IRepairActions
     Task AddPackageAsync(string packagePath, IReadOnlyList<string> dependencyPaths, CancellationToken ct);
 
     Task RegisterAppInstallerAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Onarım başarıyla bittikten sonra indirilen dosyaları ve çıkarılan bağımlılık klasörlerini siler (yüzlerce MB).
+    /// Hata fırlatırsa çağıran günlüğe yazar; onarım bu yüzden başarısız sayılmaz. Varsayılan: silinecek bir şey yok.
+    /// </summary>
+    void CleanupDownloads()
+    {
+    }
 }

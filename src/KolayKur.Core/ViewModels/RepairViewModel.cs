@@ -12,6 +12,7 @@ public sealed partial class RepairViewModel : ObservableObject
 {
     public const string FailedKey = "Repair_Failed";
     public const string VerificationFailedKey = "Repair_VerificationFailed";
+    public const string DownloadStalledKey = "Repair_DownloadStalled";
 
     private readonly WingetRepairService repair;
     private readonly WingetDiagnosis diagnosis;
@@ -74,8 +75,8 @@ public sealed partial class RepairViewModel : ObservableObject
 
     // Ağır iş (yoklamalar eşzamanlı, indirmeler yüzlerce MB'lık özet hesaplar) Task.Run ile arayüz iş parçacığından
     // çıkarılır; Progress arayüz bağlamında kurulduğu için durum metni arayüz iş parçacığında güncellenir.
-    [RelayCommand]
-    private async Task RepairAsync()
+    [RelayCommand(IncludeCancelCommand = true)]
+    private async Task RepairAsync(CancellationToken cancellationToken)
     {
         ErrorKey = null;
         SetLatestProgress(null);
@@ -83,13 +84,24 @@ public sealed partial class RepairViewModel : ObservableObject
 
         try
         {
-            var result = await Task.Run(() => repair.RepairAsync(diagnosis, progress, CancellationToken.None));
+            var result = await Task.Run(() => repair.RepairAsync(diagnosis, progress, cancellationToken));
             if (result.State != WingetState.Healthy)
             {
                 log.TryInfo($"Onarımdan sonra winget hâlâ çalışmıyor: {result.State} {result.Detail}");
                 ErrorKey = FailedKey;
                 return;
             }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Kullanıcı vazgeçti; hata değildir. Servis iptali zaten günlüğe yazdı.
+            return;
+        }
+        catch (DownloadStalledException ex)
+        {
+            log.TryError("İndirme takıldı.", ex);
+            ErrorKey = DownloadStalledKey;
+            return;
         }
         catch (DownloadVerificationException ex)
         {

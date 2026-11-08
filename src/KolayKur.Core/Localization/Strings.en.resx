@@ -258,4 +258,7 @@
   <data name="Settings_RepairCheckFailed" xml:space="preserve">
     <value>Winget could not be checked. Please try again in a moment; details are in the log file.</value>
   </data>
+  <data name="Repair_DownloadStalled" xml:space="preserve">
+    <value>The download stalled: no data has arrived for a long time. Check your internet connection and press "Repair" again; the download will start over.</value>
+  </data>
 </root>

@@ -126,6 +126,79 @@ public sealed class ShellRepairViewModelTests : IDisposable
         await running.WaitAsync(TimeSpan.FromSeconds(10));
     }
 
+    [Fact]
+    public async Task Stalled_download_shows_its_own_error_and_retry_works()
+    {
+        var actions = new ThrowingActions(new DownloadStalledException("paket.bin"));
+        var viewModel = CreateViewModel(actions, new FakeSystemProbe(), NotInstalled);
+        var repaired = 0;
+        viewModel.Repaired += (_, _) => repaired++;
+
+        await viewModel.RepairCommand.ExecuteAsync(null);
+
+        Assert.Equal("Repair_DownloadStalled", viewModel.ErrorKey);
+        Assert.Equal(0, repaired);
+        Assert.True(viewModel.RepairCommand.CanExecute(null));
+
+        actions.Failure = null;
+        await viewModel.RepairCommand.ExecuteAsync(null);
+
+        Assert.Null(viewModel.ErrorKey);
+        Assert.Equal(1, repaired);
+    }
+
+    [Fact]
+    public async Task Cancel_command_cancels_the_running_repair_without_an_error()
+    {
+        var actions = new CancellableActions();
+        var viewModel = CreateViewModel(actions, new FakeSystemProbe(), NotInstalled);
+        var running = viewModel.RepairCommand.ExecuteAsync(null);
+        await actions.Entered.WaitAsync(TimeSpan.FromSeconds(10));
+
+        viewModel.RepairCancelCommand.Execute(null);
+        await running.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(actions.SawCancellation);
+        Assert.Null(viewModel.ErrorKey);
+    }
+
+    /// <summary>İlk adımda, verilen iptal belirteci iptal edilene kadar bekler.</summary>
+    private sealed class CancellableActions : IRepairActions
+    {
+        private readonly TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly FakeRepairActions inner = new();
+
+        public Task Entered => entered.Task;
+
+        public bool SawCancellation { get; private set; }
+
+        public async Task<WingetRelease> GetLatestReleaseAsync(CancellationToken ct)
+        {
+            entered.TrySetResult();
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                SawCancellation = true;
+                throw;
+            }
+
+            return await inner.GetLatestReleaseAsync(ct);
+        }
+
+        public Task<string> DownloadAsync(RepairFile file, IProgress<double> progress, CancellationToken ct) =>
+            inner.DownloadAsync(file, progress, ct);
+
+        public IReadOnlyList<string> ExtractDependencies(string zipPath) => inner.ExtractDependencies(zipPath);
+
+        public Task AddPackageAsync(string packagePath, IReadOnlyList<string> dependencyPaths, CancellationToken ct) =>
+            inner.AddPackageAsync(packagePath, dependencyPaths, ct);
+
+        public Task RegisterAppInstallerAsync(CancellationToken ct) => inner.RegisterAppInstallerAsync(ct);
+    }
+
     private sealed class ThrowingActions(Exception failure) : IRepairActions
     {
         public Exception? Failure { get; set; } = failure;

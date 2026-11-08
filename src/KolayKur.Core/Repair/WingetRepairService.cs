@@ -43,7 +43,26 @@ public sealed class WingetRepairService(IRepairActions actions, WingetHealthServ
 
         var result = await health.DiagnoseAsync(ct);
         log.Info($"Onarım bitti: {result.State}");
+        if (result.State == WingetState.Healthy)
+        {
+            CleanUpDownloads();
+        }
+
         return result;
+    }
+
+    // İndirilenler yüzlerce MB tutar; başarıdan sonra silinir. Silinemezse onarım yine başarılıdır, yalnızca günlüğe yazılır.
+    private void CleanUpDownloads()
+    {
+        try
+        {
+            actions.CleanupDownloads();
+            log.TryInfo("İndirilen onarım dosyaları silindi.");
+        }
+        catch (Exception ex)
+        {
+            log.TryError("İndirilen onarım dosyaları silinemedi.", ex);
+        }
     }
 
     private async Task InstallFromScratchAsync(IProgress<RepairStep> progress, CancellationToken ct)
