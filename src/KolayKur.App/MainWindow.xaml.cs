@@ -25,7 +25,8 @@ public partial class MainWindow : FluentWindow
         updatesPage.DataContext = updates;
         installedPage.DataContext = installed;
         settingsPage.DataContext = settings;
-        operationList.DataContext = operations;
+        operationsPane.DataContext = operations;
+        operationsToggle.DataContext = operations;
     }
 
     // İşlem sürerken kapatmak onay ister; kullanıcı vazgeçerse pencere açık kalır.

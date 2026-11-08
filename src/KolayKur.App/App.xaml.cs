@@ -26,13 +26,13 @@ public partial class App : Application
         var saved = AppSettings.Load(AppPaths.SettingsFile);
         Loc.Instance.SetLanguage(saved.Language);
 
-        // Kayıtlı tema, pencere oluşmadan önce uygulanır: açılışta yanlış temada parlama olmaz.
-        var themes = new WpfUiThemeService();
-        themes.Apply(saved.Theme);
-
         MainWindow? window = null;
         try
         {
+            // Kayıtlı tema, pencere oluşmadan önce uygulanır: açılışta yanlış temada parlama olmaz. Hata olursa "Startup_Failed" yoluna düşer.
+            var themes = new WpfUiThemeService();
+            themes.Apply(saved.Theme);
+
             // COM'a (winget nesnelerine) ilk dokunuştan önce winmd programın yanında olmalı.
             if (!EnsureWinmd(dialogs))
             {

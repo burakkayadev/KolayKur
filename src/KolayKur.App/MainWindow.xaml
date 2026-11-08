@@ -81,26 +81,46 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Başlık çubuğu: solda logo ve ad (Header). Sağ tarafa (İşlemler düğmesi, Görev 3) TrailingContent konur; pencere düğmeleri en sağda kalır. -->
+        <!-- Başlık çubuğu: solda logo ve ad (Header). Sağ tarafa (İşlemler düğmesi) TrailingContent konur; pencere düğmeleri en sağda kalır. -->
         <ui:TitleBar Grid.Row="0" ShowMaximize="True" ShowMinimize="True">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
-                    <Image Width="18" Height="18" Source="{StaticResource LogoImage}"
+                    <Image Width="18" Height="18" Source="{StaticResource LogoSmallImage}"
                            RenderOptions.BitmapScalingMode="HighQuality" />
                     <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                Text="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}" />
                 </StackPanel>
             </ui:TitleBar.Header>
+            <!-- İşlemler paneli geçiş düğmesi (DataContext: OperationListViewModel, kod arkasında atanır). Panel kapalıyken sıradaki ve süren iş sayısı rozet olarak görünür. -->
+            <ui:TitleBar.TrailingContent>
+                <ToggleButton x:Name="operationsToggle" Style="{StaticResource TitleToggleStyle}"
+                              IsChecked="{Binding IsPaneOpen, Mode=TwoWay}"
+                              AutomationProperties.Name="{Binding [Ops_Toggle], Source={x:Static loc:Loc.Instance}}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="TaskListSquareLtr24" FontSize="16" VerticalAlignment="Center" />
+                        <TextBlock Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                   Text="{Binding [Ops_Toggle], Source={x:Static loc:Loc.Instance}}" />
+                        <Border Margin="8,0,0,0" MinWidth="18" Height="18" Padding="5,0" CornerRadius="9"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource BrandAccentBrush}"
+                                Visibility="{Binding HasActive, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource BrandAccentForegroundBrush}"
+                                       Text="{Binding ActiveCount}" />
+                        </Border>
+                    </StackPanel>
+                </ToggleButton>
+            </ui:TitleBar.TrailingContent>
         </ui:TitleBar>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="80" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <!-- Sol menü: IsChecked <-> CurrentPage; winget denetimi ve onarım sürerken devre dışı. -->
@@ -168,13 +188,11 @@
                     </StackPanel>
                 </Grid>
             </Border>
+
+            <!-- İşlemler paneli: sağda 300 px; IsPaneOpen ile görünür (DataContext: OperationListViewModel, kod arkasında atanır). -->
+            <views:OperationsPane x:Name="operationsPane" Grid.Column="2" Width="300"
+                                  Visibility="{Binding IsPaneOpen, Converter={StaticResource BoolToVisibility}}" />
         </Grid>
 
-        <!-- Alt alan: işlem listesi (Görev 3'te sağ panelle değişir). -->
-        <Border Grid.Row="2" Height="150" Padding="16,10"
-                Background="{DynamicResource PageBackgroundBrush}"
-                BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="0,1,0,0">
-            <views:OperationListView x:Name="operationList" />
-        </Border>
     </Grid>
 </ui:FluentWindow>

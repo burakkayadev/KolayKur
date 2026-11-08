@@ -57,6 +57,80 @@ public sealed class OperationQueueTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearFinished_removes_only_finished_items()
+    {
+        // Arrange: A bitti, B tutuluyor (Running), C sırada.
+        var client = new FakeWingetClient();
+        var gate = client.Hold("B.Two");
+        var queue = CreateQueue(client);
+        queue.Enqueue(OperationKind.Install, Pkg("A.One"));
+        queue.Enqueue(OperationKind.Install, Pkg("B.Two"));
+        queue.Enqueue(OperationKind.Install, Pkg("C.Three"));
+        await gate.Started.WaitAsync(Timeout);
+        var b = queue.Items[1];
+        var c = queue.Items[2];
+        Assert.Equal(OperationStatus.Succeeded, queue.Items[0].Status);
+
+        // Act
+        var removed = queue.ClearFinished();
+
+        // Assert
+        Assert.Equal(1, removed);
+        Assert.Equal([b, c], queue.Items);
+        gate.Release();
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+    }
+
+    [Fact]
+    public void ClearFinished_on_empty_queue_returns_zero()
+    {
+        var queue = CreateQueue(new FakeWingetClient());
+
+        Assert.Equal(0, queue.ClearFinished());
+        Assert.Empty(queue.Items);
+    }
+
+    [Fact]
+    public async Task Finished_package_can_be_enqueued_again_after_clear()
+    {
+        var queue = CreateQueue(new FakeWingetClient());
+        queue.Enqueue(OperationKind.Install, Pkg("A.One"));
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+        Assert.Equal(1, queue.ClearFinished());
+        Assert.Empty(queue.Items);
+
+        var again = queue.Enqueue(OperationKind.Install, Pkg("A.One"));
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+
+        Assert.NotNull(again);
+        Assert.Equal([again], queue.Items);
+        Assert.Equal(OperationStatus.Succeeded, again.Status);
+    }
+
+    [Fact]
+    public async Task ClearFinished_on_the_queue_context_removes_only_finished_items()
+    {
+        // Arrange: kuyruk bir bağlamda kurulur; değişiklikler o bağlama taşınır.
+        using var pump = new PumpContext();
+        var client = new FakeWingetClient();
+        var gate = client.Hold("B.Two");
+        var queue = pump.Run(() => CreateQueue(client));
+        pump.Run(() => queue.Enqueue(OperationKind.Install, Pkg("A.One")));
+        pump.Run(() => queue.Enqueue(OperationKind.Install, Pkg("B.Two")));
+        await gate.Started.WaitAsync(Timeout);
+        await pump.FlushAsync();
+
+        // Act
+        var removed = pump.Run(() => queue.ClearFinished());
+
+        // Assert
+        Assert.Equal(1, removed);
+        Assert.Equal(["B.Two"], pump.Run(() => queue.Items.Select(item => item.Package.Id).ToList()));
+        gate.Release();
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+    }
+
+    [Fact]
     public async Task Failed_item_does_not_stop_next()
     {
         var client = new FakeWingetClient();

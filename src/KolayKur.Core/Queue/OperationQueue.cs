@@ -94,6 +94,30 @@ public sealed class OperationQueue : ObservableObject
         return item;
     }
 
+    /// <summary>
+    /// Bitmiş (başarılı, başarısız, iptal, bulunamadı) öğeleri <see cref="Items"/>'tan kaldırır; sıradaki ve çalışan
+    /// öğelere dokunmaz. <see cref="Items"/> yalnızca kuyruğun bağlamında değiştirildiği için bu yöntem de o bağlamda
+    /// (arayüzde arayüz iş parçacığı) çağrılmalıdır. Aynı kimlikli yeni işin eklenmesi bu listeye değil bitmemiş işler
+    /// kümesine bakar; bu yüzden temizlenen paket yeniden eklenebilir.
+    /// </summary>
+    /// <returns>Kaldırılan öğe sayısı.</returns>
+    public int ClearFinished()
+    {
+        var removed = 0;
+        for (var index = items.Count - 1; index >= 0; index--)
+        {
+            if (items[index].Status is OperationStatus.Queued or OperationStatus.Running)
+            {
+                continue;
+            }
+
+            items.RemoveAt(index);
+            removed++;
+        }
+
+        return removed;
+    }
+
     /// <summary>Kuyruk boş ve hiçbir işlem çalışmıyorken (<see cref="BatchCompleted"/> tetiklendikten sonra) tamamlanır.</summary>
     public Task WhenIdleAsync()
     {

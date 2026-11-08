@@ -45,6 +45,15 @@
   <data name="OperationList_Empty" xml:space="preserve">
     <value>No operations yet.</value>
   </data>
+  <data name="Ops_ClearFinished" xml:space="preserve">
+    <value>Clear finished</value>
+  </data>
+  <data name="Ops_ClosePane" xml:space="preserve">
+    <value>Close operations panel</value>
+  </data>
+  <data name="Ops_Toggle" xml:space="preserve">
+    <value>Operations</value>
+  </data>
   <data name="Startup_Checking" xml:space="preserve">
     <value>Checking winget...</value>
   </data>

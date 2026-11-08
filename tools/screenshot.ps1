@@ -4,7 +4,8 @@
 
 .DESCRIPTION
   - Geçici bir veri klasörü kullanır (KOLAYKUR_DATA_DIR); sahibinin gerçek %LocalAppData%\KolayKur klasörüne dokunmaz.
-  - Yalnızca sol menü (RadioButton) düğmelerine ve -Search verilirse arama kutusuna ile "Ara" düğmesine basar.
+  - Yalnızca sol menü (RadioButton) düğmelerine, -Search verilirse arama kutusuna ile "Ara" düğmesine ve -OpenPane verilirse
+    başlıktaki "İşlemler" geçiş düğmesine basar (yalnızca paneli açar).
     Kur, Güncelle, Kaldır, Listeden kur, Onar ve başka hiçbir düğmeye basılmaz.
   - Başlattığı süreci her durumda kapatır ve geçici klasörü siler.
 
@@ -20,6 +21,7 @@ param(
     [int]$Width = 1100,
     [int]$Height = 720,
     [string]$Search = '',
+    [switch]$OpenPane,
     [string]$Out = 'out\screenshots\screenshot.png',
     [string]$Exe = ''
 )
@@ -50,8 +52,8 @@ public static class KkNative {
 
 # Menü düğmelerinin ve Ara düğmesinin görünen adları (kısa menü metinleri).
 $names = @{
-    tr = @{ Search = 'Ara'; Updates = 'Güncelle'; Installed = 'Yüklü'; Settings = 'Ayarlar'; SearchAction = 'Ara' }
-    en = @{ Search = 'Search'; Updates = 'Updates'; Installed = 'Installed'; Settings = 'Settings'; SearchAction = 'Search' }
+    tr = @{ Search = 'Ara'; Updates = 'Güncelle'; Installed = 'Yüklü'; Settings = 'Ayarlar'; SearchAction = 'Ara'; Operations = 'İşlemler' }
+    en = @{ Search = 'Search'; Updates = 'Updates'; Installed = 'Installed'; Settings = 'Settings'; SearchAction = 'Search'; Operations = 'Operations' }
 }[$Lang]
 
 function Find-Elements($root, $controlType) {
@@ -105,6 +107,15 @@ try {
     # Yalnızca menü düğmesi: RadioButton seçilir.
     $menuButton.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
     Start-Sleep -Milliseconds 600
+
+    # Yalnızca başlıktaki "İşlemler" geçiş düğmesi: panel kapalıysa açılır (iş eklemez, başka düğmeye basmaz).
+    if ($OpenPane) {
+        $toggle = Find-Named $root ([System.Windows.Automation.ControlType]::Button) $names.Operations
+        if (-not $toggle) { throw 'Islemler dugmesi bulunamadi.' }
+        $tp = $toggle.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
+        if ($tp.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { $tp.Toggle() }
+        Start-Sleep -Milliseconds 600
+    }
 
     if ($Search) {
         if ($Page -ne 'Search') { throw '-Search yalnizca -Page Search ile kullanilir.' }

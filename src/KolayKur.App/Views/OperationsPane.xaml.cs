@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace KolayKur.App.Views;
 
-public partial class OperationListView : UserControl
+public partial class OperationsPane : UserControl
 {
-    public OperationListView()
+    public OperationsPane()
     {
         InitializeComponent();
     }

@@ -45,6 +45,15 @@
   <data name="OperationList_Empty" xml:space="preserve">
     <value>Henüz işlem yok.</value>
   </data>
+  <data name="Ops_ClearFinished" xml:space="preserve">
+    <value>Bitenleri temizle</value>
+  </data>
+  <data name="Ops_ClosePane" xml:space="preserve">
+    <value>İşlemler panelini kapat</value>
+  </data>
+  <data name="Ops_Toggle" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
   <data name="Startup_Checking" xml:space="preserve">
     <value>Winget denetleniyor...</value>
   </data>
