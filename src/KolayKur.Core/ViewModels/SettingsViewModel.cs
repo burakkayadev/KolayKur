@@ -63,17 +63,33 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Çalışan winget'in sürümü; çalışmıyorsa boş.</summary>
     public string WingetVersion => shell.WingetVersion;
 
-    /// <summary>Winget sağlıklıysa onarım gerekmediğini söyler; değilse onarım sayfasını açar.</summary>
+    /// <summary>
+    /// Winget'i yeniden denetler (açılıştaki sonuç eskimiş ya da hiç alınamamış olabilir). Sağlıklıysa onarım
+    /// gerekmediğini söyler; değilse yeni tanıyla onarım sayfasını açar. Denetim başarısız olursa açık bir hata gösterir
+    /// ve ayarlar sayfasında kalır.
+    /// </summary>
     [RelayCommand]
-    private void OpenRepair()
+    private async Task OpenRepairAsync()
     {
-        if (Diagnosis?.State == WingetState.Healthy)
+        WingetDiagnosis result;
+        try
+        {
+            result = await shell.RecheckAsync(CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            log.TryError("Ayarlar: winget yeniden denetlenemedi.", ex);
+            dialogs.Inform(Loc.Instance["Settings_RepairCheckFailed"]);
+            return;
+        }
+
+        if (result.State == WingetState.Healthy)
         {
             dialogs.Inform(Loc.Instance["Settings_RepairNotNeeded"]);
             return;
         }
 
-        shell.CurrentPage = ShellPage.Repair;
+        shell.OpenRepairFor(result);
     }
 
     /// <summary>Günlük dosyasını açar. Henüz yazılmamışsa açılacak bir şey olsun diye önce bir satır yazılır.</summary>

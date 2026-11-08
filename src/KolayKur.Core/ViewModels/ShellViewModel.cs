@@ -71,16 +71,38 @@ public sealed partial class ShellViewModel(
     // (bağlamaya giden durum) await sonrasında, çağıranın bağlamında yapılır.
     private async Task DiagnoseAsync(CancellationToken ct)
     {
+        var result = await RecheckAsync(ct);
+        ShowPageFor(result);
+    }
+
+    /// <summary>
+    /// Winget'i yeniden denetler ve <see cref="Diagnosis"/> değerini günceller; sayfayı değiştirmez. Denetim bir
+    /// istisna fırlatırsa (örn. bozuk AppX durumu) istisna çağırana yansır ve <see cref="IsChecking"/> kapanır.
+    /// </summary>
+    public async Task<WingetDiagnosis> RecheckAsync(CancellationToken ct)
+    {
         IsChecking = true;
         try
         {
             var result = await Task.Run(() => health.DiagnoseAsync(ct), ct);
             Diagnosis = result;
-            ShowPageFor(result);
+            return result;
         }
         finally
         {
             IsChecking = false;
+        }
+    }
+
+    /// <summary>Onarım sayfasını verilen (sağlıklı olmayan) tanı için açar; sağlıklıysa onarım sayfası kapanır.</summary>
+    public void OpenRepairFor(WingetDiagnosis result) => ShowPageFor(result);
+
+    // Onarım sayfası tanısız, sağlıklı bir tanıyla ya da onarım ViewModel'i olmadan boş ve çıkışsız kalır; geri dön.
+    partial void OnCurrentPageChanged(ShellPage value)
+    {
+        if (value == ShellPage.Repair && (Repair is null || Diagnosis is null or { State: WingetState.Healthy }))
+        {
+            CurrentPage = ShellPage.Search;
         }
     }
 

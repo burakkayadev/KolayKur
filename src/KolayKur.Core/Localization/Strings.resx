@@ -255,4 +255,7 @@
   <data name="Repair_Stage_Registering" xml:space="preserve">
     <value>Uygulama Yükleyici kaydediliyor.</value>
   </data>
+  <data name="Settings_RepairCheckFailed" xml:space="preserve">
+    <value>Winget durumu denetlenemedi. Biraz sonra tekrar deneyin; ayrıntı günlük dosyasındadır.</value>
+  </data>
 </root>

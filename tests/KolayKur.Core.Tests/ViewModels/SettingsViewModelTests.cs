@@ -2,6 +2,7 @@ using System.ComponentModel;
 using KolayKur.Core.Health;
 using KolayKur.Core.Localization;
 using KolayKur.Core.Queue;
+using KolayKur.Core.Repair;
 using KolayKur.Core.Support;
 using KolayKur.Core.Tests.Fakes;
 using KolayKur.Core.ViewModels;
@@ -179,6 +180,21 @@ public sealed class SettingsViewModelTests : IDisposable
 
     // ---- Onar ----
 
+    private (ShellViewModel Shell, SettingsViewModel ViewModel) CreateUnstarted(ISystemProbe probe)
+    {
+        var repair = new WingetRepairService(new FakeRepairActions(), new WingetHealthService(probe), Log);
+        var shell = new ShellViewModel(
+            new WingetHealthService(probe),
+            new OperationQueue(new FakeWingetClient(), Log),
+            dialogs,
+            SettingsPath,
+            d => new RepairViewModel(repair, d, Log),
+            Log);
+        Directory.CreateDirectory(directory);
+        new AppSettings(Language: "tr", LicenseNoticeShown: true).Save(SettingsPath);
+        return (shell, new SettingsViewModel(shell, Log, dialogs, SettingsPath));
+    }
+
     [Fact]
     public async Task Open_repair_when_winget_is_healthy_only_informs()
     {
@@ -187,7 +203,7 @@ public sealed class SettingsViewModelTests : IDisposable
         shell.CurrentPage = ShellPage.Settings;
 
         // Act
-        viewModel.OpenRepairCommand.Execute(null);
+        await viewModel.OpenRepairCommand.ExecuteAsync(null);
 
         // Assert
         Assert.Equal([Loc.Instance["Settings_RepairNotNeeded"]], dialogs.Informed);
@@ -198,20 +214,98 @@ public sealed class SettingsViewModelTests : IDisposable
     public async Task Open_repair_when_winget_is_broken_shows_repair_page()
     {
         // Arrange
-        var probe = new FakeSystemProbe
-        {
-            WingetResult = new ProbeResult(false, "", "winget yok"),
-            AppInstallerVersion = null,
-        };
-        var (viewModel, shell) = await CreateAsync(probe);
+        var probe = new ControllableSystemProbe();
+        var (shell, viewModel) = CreateUnstarted(probe);
+        await shell.StartAsync(CancellationToken.None);
         shell.CurrentPage = ShellPage.Settings;
 
         // Act
-        viewModel.OpenRepairCommand.Execute(null);
+        await viewModel.OpenRepairCommand.ExecuteAsync(null);
 
         // Assert
         Assert.Equal(ShellPage.Repair, shell.CurrentPage);
+        Assert.NotNull(shell.Repair);
         Assert.Empty(dialogs.Informed);
+    }
+
+    [Fact]
+    public async Task Open_repair_runs_the_check_again_and_opens_repair_when_winget_broke_after_startup()
+    {
+        // Arrange: açılışta sağlıklı, sonra bozuldu.
+        var probe = new ControllableSystemProbe { Working = true };
+        var (shell, viewModel) = CreateUnstarted(probe);
+        await shell.StartAsync(CancellationToken.None);
+        shell.CurrentPage = ShellPage.Settings;
+        Assert.Equal(WingetState.Healthy, shell.Diagnosis?.State);
+        probe.Working = false;
+
+        // Act
+        await viewModel.OpenRepairCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(WingetState.NotInstalled, shell.Diagnosis?.State);
+        Assert.Equal(ShellPage.Repair, shell.CurrentPage);
+        Assert.NotNull(shell.Repair);
+        Assert.Empty(dialogs.Informed);
+    }
+
+    [Fact]
+    public async Task Open_repair_informs_when_the_new_check_finds_winget_working_again()
+    {
+        // Arrange: açılışta bozuktu (onarım sayfası), kullanıcı ayarlara geçti, bu arada düzeldi.
+        var probe = new ControllableSystemProbe();
+        var (shell, viewModel) = CreateUnstarted(probe);
+        await shell.StartAsync(CancellationToken.None);
+        shell.CurrentPage = ShellPage.Settings;
+        probe.Working = true;
+
+        // Act
+        await viewModel.OpenRepairCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(WingetState.Healthy, shell.Diagnosis?.State);
+        Assert.Equal([Loc.Instance["Settings_RepairNotNeeded"]], dialogs.Informed);
+        Assert.Equal(ShellPage.Settings, shell.CurrentPage);
+    }
+
+    [Fact]
+    public async Task Open_repair_works_after_the_startup_check_threw()
+    {
+        // Arrange: bozuk AppX durumunda açılış denetimi istisna fırlatır; tanı yok.
+        var probe = new ControllableSystemProbe { Failure = new InvalidOperationException("AppX bozuk") };
+        var (shell, viewModel) = CreateUnstarted(probe);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => shell.StartAsync(CancellationToken.None));
+        Assert.Null(shell.Diagnosis);
+        shell.CurrentPage = ShellPage.Settings;
+        probe.Failure = null;
+
+        // Act
+        await viewModel.OpenRepairCommand.ExecuteAsync(null);
+
+        // Assert: boş sayfa değil, gerçek tanıyla onarım sayfası.
+        Assert.Equal(WingetState.NotInstalled, shell.Diagnosis?.State);
+        Assert.Equal(ShellPage.Repair, shell.CurrentPage);
+        Assert.NotNull(shell.Repair);
+    }
+
+    [Fact]
+    public async Task Open_repair_shows_an_error_and_stays_on_settings_when_the_check_throws()
+    {
+        // Arrange
+        var probe = new ControllableSystemProbe { Working = true };
+        var (shell, viewModel) = CreateUnstarted(probe);
+        await shell.StartAsync(CancellationToken.None);
+        shell.CurrentPage = ShellPage.Settings;
+        probe.Failure = new InvalidOperationException("AppX bozuk");
+
+        // Act
+        await viewModel.OpenRepairCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal([Loc.Instance["Settings_RepairCheckFailed"]], dialogs.Informed);
+        Assert.Equal(ShellPage.Settings, shell.CurrentPage);
+        Assert.False(shell.IsChecking);
+        Assert.Contains("AppX bozuk", File.ReadAllText(Log.CurrentFile), StringComparison.Ordinal);
     }
 
     // ---- Günlük ----

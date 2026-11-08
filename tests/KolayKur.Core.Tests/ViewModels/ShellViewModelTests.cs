@@ -190,6 +190,58 @@ public sealed class ShellViewModelTests : IDisposable
         Assert.Equal(new AppSettings("en", LicenseNoticeShown: true), AppSettings.Load(SettingsPath));
     }
 
+    [Fact]
+    public async Task Repair_page_is_never_shown_without_a_broken_diagnosis()
+    {
+        // Diagnosis yok (örn. açılış denetimi istisna fırlattı).
+        var failing = new ControllableSystemProbe { Failure = new InvalidOperationException("AppX bozuk") };
+        var shell = CreateShell(failing);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => shell.StartAsync(CancellationToken.None));
+
+        shell.CurrentPage = ShellPage.Repair;
+
+        Assert.Equal(ShellPage.Search, shell.CurrentPage);
+
+        // Diagnosis sağlıklı.
+        var healthy = CreateShell(new FakeSystemProbe());
+        await healthy.StartAsync(CancellationToken.None);
+
+        healthy.CurrentPage = ShellPage.Repair;
+
+        Assert.Equal(ShellPage.Search, healthy.CurrentPage);
+    }
+
+    [Fact]
+    public async Task Recheck_updates_the_diagnosis_without_changing_the_page()
+    {
+        var probe = new ControllableSystemProbe { Working = true };
+        var shell = CreateShell(probe);
+        await shell.StartAsync(CancellationToken.None);
+        shell.CurrentPage = ShellPage.Settings;
+        probe.Working = false;
+
+        var result = await shell.RecheckAsync(CancellationToken.None);
+
+        Assert.Equal(WingetState.NotInstalled, result.State);
+        Assert.Same(result, shell.Diagnosis);
+        Assert.Equal(ShellPage.Settings, shell.CurrentPage);
+        Assert.False(shell.IsChecking);
+    }
+
+    [Fact]
+    public async Task Recheck_failure_reaches_the_caller_and_clears_the_checking_flag()
+    {
+        var probe = new ControllableSystemProbe { Working = true };
+        var shell = CreateShell(probe);
+        await shell.StartAsync(CancellationToken.None);
+        probe.Failure = new InvalidOperationException("AppX bozuk");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => shell.RecheckAsync(CancellationToken.None));
+
+        Assert.False(shell.IsChecking);
+        Assert.Equal(WingetState.Healthy, shell.Diagnosis?.State);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         using var cts = new CancellationTokenSource(Timeout);
