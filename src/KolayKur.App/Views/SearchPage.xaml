@@ -3,7 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:views="clr-namespace:KolayKur.App.Views"
-             xmlns:layout="clr-namespace:KolayKur.App.Views.Layout"
              xmlns:conv="clr-namespace:KolayKur.App.Converters"
              xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core">
     <!-- DataContext: SearchViewModel (ana pencere atar). Renkler yalnız DynamicResource ile Themes sözlüklerinden gelir. -->
@@ -183,13 +182,7 @@
         <Grid Grid.Row="4" Margin="0,12,0,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource ResultCardTemplate}"
-                              Focusable="False" Margin="0,0,0,4">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <layout:CardGridPanel MinColumnWidth="220" Spacing="12" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
+                              Style="{StaticResource CardGridItemsControlStyle}" />
             </ScrollViewer>
 
             <StackPanel Style="{StaticResource EmptyStateStyle}" VerticalAlignment="Top" Margin="0,24,0,0">

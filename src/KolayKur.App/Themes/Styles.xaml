@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                    xmlns:layout="clr-namespace:KolayKur.App.Views.Layout">
     <!-- Bütün renkler DynamicResource: tema çalışırken değişince kartlar, menü ve metinler anında yeni renge geçer. -->
 
     <Style x:Key="PageTitleTextStyle" TargetType="TextBlock">
@@ -22,6 +23,23 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <!--
+      Kart ızgarası (CardGridPanel) için ItemsControl stili; dikey ScrollViewer içinde kullanılır (Ara, Güncellemeler, Yüklü).
+      Sağ boşluk, WPF-UI kaydırma çubuğunun açılmış genişliğini (ölçülen 14 px) ve 2 px aralığı ayırır:
+      çubuk son sütunun kartlarının (ve seçim kutularının) üstüne binmez, kart pencere kenarında kesilmez.
+    -->
+    <Style x:Key="CardGridItemsControlStyle" TargetType="ItemsControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Margin" Value="0,0,16,4" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <layout:CardGridPanel MinColumnWidth="220" Spacing="12" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="VersionChipStyle" TargetType="Border">
