@@ -34,8 +34,8 @@
         <TextBlock Grid.Row="0" FontSize="26" FontWeight="SemiBold"
                    Text="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
 
-        <views:ErrorBanner Grid.Row="1" Margin="0,16,0,0"
-                           ErrorKey="{Binding ErrorKey}" RetryCommand="{Binding LoadCommand}" />
+        <views:ErrorInfoBar Grid.Row="1" Margin="0,16,0,0"
+                           ErrorKey="{Binding ErrorKey}" ShowRetry="True" RetryCommand="{Binding LoadCommand}" />
 
         <Grid Grid.Row="2" Margin="0,12,0,0">
             <ListView ItemsSource="{Binding Updates}" HorizontalContentAlignment="Stretch">

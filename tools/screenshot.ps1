@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   - Geçici bir veri klasörü kullanır (KOLAYKUR_DATA_DIR); sahibinin gerçek %LocalAppData%\KolayKur klasörüne dokunmaz.
-  - Yalnızca sol menü (RadioButton) düğmelerine, -Search verilirse arama kutusuna ile "Ara" düğmesine ve -OpenPane verilirse
+  - Yalnızca sol menü (RadioButton) düğmelerine, -Search verilirse arama kutusuna (AutomationId SearchBox) ile "Ara" düğmesine (SearchButton) ve -OpenPane verilirse
     başlıktaki "İşlemler" geçiş düğmesine basar (yalnızca paneli açar).
     Kur, Güncelle, Kaldır, Listeden kur, Onar ve başka hiçbir düğmeye basılmaz.
   - Başlattığı süreci her durumda kapatır ve geçici klasörü siler.
@@ -68,6 +68,12 @@ function Find-Named($root, $controlType, $name) {
     return $null
 }
 
+# Sabit AutomationId ile bulur (metin/dil değişse de aynı kalır).
+function Find-ById($root, $automationId) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition ([System.Windows.Automation.AutomationElement]::AutomationIdProperty), $automationId
+    return $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+}
+
 function Wait-Until([scriptblock]$test, [int]$seconds, [string]$what) {
     $deadline = (Get-Date).AddSeconds($seconds)
     while ((Get-Date) -lt $deadline) {
@@ -119,10 +125,10 @@ try {
 
     if ($Search) {
         if ($Page -ne 'Search') { throw '-Search yalnizca -Page Search ile kullanilir.' }
-        $box = (Find-Elements $root ([System.Windows.Automation.ControlType]::Edit)) | Select-Object -First 1
+        $box = Find-ById $root 'SearchBox'
         if (-not $box) { throw 'Arama kutusu bulunamadi.' }
         $box.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Search)
-        $go = Find-Named $root ([System.Windows.Automation.ControlType]::Button) $names.SearchAction
+        $go = Find-ById $root 'SearchButton'
         if (-not $go) { throw 'Ara dugmesi bulunamadi.' }
         $go.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
         Start-Sleep -Seconds 8

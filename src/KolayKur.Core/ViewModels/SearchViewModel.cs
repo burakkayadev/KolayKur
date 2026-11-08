@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KolayKur.Core.Localization;
 using KolayKur.Core.Models;
 using KolayKur.Core.Queue;
 using KolayKur.Core.Support;
@@ -13,6 +15,9 @@ public sealed partial class SelectablePackage(PackageInfo package) : ObservableO
 {
     public PackageInfo Package { get; } = package;
 
+    /// <summary>Kartta gösterilen sürüm: önce kullanılabilir, yoksa kurulu sürüm.</summary>
+    public string? DisplayVersion => Package.AvailableVersion ?? Package.InstalledVersion;
+
     [ObservableProperty]
     private bool isSelected;
 }
@@ -21,7 +26,7 @@ public sealed partial class SelectablePackage(PackageInfo package) : ObservableO
 /// Ara sayfası. Komutlar arayüz iş parçacığında çalışır: sonuçlar <c>await</c> sonrasında aynı bağlamda yazılır.
 /// Yeni arama eskisini iptal eder; iptale saygı göstermeyen bir istemcide bile eski sonuç yenisinin üstüne yazılmaz.
 /// </summary>
-public sealed partial class SearchViewModel(IWingetClient client, OperationQueue queue, FileLog? log = null) : ObservableObject
+public sealed partial class SearchViewModel : ObservableObject
 {
     public const string NoInternetKey = "Error_NoInternet";
     public const string GenericErrorKey = "Error_Generic";
@@ -30,6 +35,22 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
     // belirtecini kullanıyor olabilir ve zamanlayıcı/bekleme tutamacı olmayan bir kaynak çöp toplayıcıya bırakılır.
     private CancellationTokenSource? currentSearch;
     private string? lastQuery;
+
+    // Son başarılı aramanın sorgusu ve sonuç sayısı; null: henüz sonuç yok (ya da arama başarısız).
+    private string? resultQuery;
+    private int resultCount;
+
+    private readonly IWingetClient client;
+    private readonly OperationQueue queue;
+    private readonly FileLog? log;
+
+    public SearchViewModel(IWingetClient client, OperationQueue queue, FileLog? log = null)
+    {
+        this.client = client;
+        this.queue = queue;
+        this.log = log;
+        Loc.Instance.WhenLanguageChanges(this, static self => self.OnPropertyChanged(nameof(ResultCountText)));
+    }
 
     [ObservableProperty]
     private string query = "";
@@ -43,6 +64,15 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
     private bool isLoading;
 
     public ObservableCollection<SelectablePackage> Results { get; } = [];
+
+    /// <summary>İşaretli sonuç sayısı; her sonucun <c>IsSelected</c> değerini izler.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(InstallSelectedCommand))]
+    private int selectedCount;
+
+    /// <summary>"“git” için 5 sonuç"; henüz başarılı bir arama yoksa <c>null</c>. Dil değişince yenilenir.</summary>
+    public string? ResultCountText =>
+        resultQuery is null ? null : string.Format(Loc.Instance["Search_ResultCount"], resultQuery, resultCount);
 
     /// <summary>Boş veya yalnızca boşluk içeren sorguda winget'e gitmez.</summary>
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -61,7 +91,7 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelection))]
     private void InstallSelected()
     {
         foreach (var row in Results.Where(row => row.IsSelected))
@@ -69,6 +99,8 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
             queue.Enqueue(OperationKind.Install, row.Package);
         }
     }
+
+    private bool HasSelection() => SelectedCount > 0;
 
     private async Task RunSearchAsync(string? text)
     {
@@ -89,11 +121,10 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
             var found = await client.SearchAsync(text, search.Token);
             if (IsCurrent(search))
             {
-                Results.Clear();
-                foreach (var package in found)
-                {
-                    Results.Add(new SelectablePackage(package));
-                }
+                ReplaceResults(found);
+                resultQuery = text;
+                resultCount = found.Count;
+                OnPropertyChanged(nameof(ResultCountText));
             }
         }
         catch (OperationCanceledException) when (search.IsCancellationRequested)
@@ -125,8 +156,39 @@ public sealed partial class SearchViewModel(IWingetClient client, OperationQueue
     {
         if (IsCurrent(search))
         {
-            Results.Clear();
+            ReplaceResults([]);
+            resultQuery = null;
+            OnPropertyChanged(nameof(ResultCountText));
             ErrorKey = key;
         }
     }
+
+    private void ReplaceResults(IReadOnlyList<PackageInfo> found)
+    {
+        // Eski satırların aboneliği bırakılır: artık sayıyı etkilememeli ve bellekte tutulmamalı.
+        foreach (var row in Results)
+        {
+            row.PropertyChanged -= OnRowChanged;
+        }
+
+        Results.Clear();
+        foreach (var package in found)
+        {
+            var row = new SelectablePackage(package);
+            row.PropertyChanged += OnRowChanged;
+            Results.Add(row);
+        }
+
+        UpdateSelectedCount();
+    }
+
+    private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SelectablePackage.IsSelected))
+        {
+            UpdateSelectedCount();
+        }
+    }
+
+    private void UpdateSelectedCount() => SelectedCount = Results.Count(row => row.IsSelected);
 }

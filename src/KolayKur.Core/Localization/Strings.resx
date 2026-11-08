@@ -114,6 +114,15 @@
   <data name="Search_InstallSelected" xml:space="preserve">
     <value>Seçilenleri kur</value>
   </data>
+  <data name="Search_ResultCount" xml:space="preserve">
+    <value>“{0}” için {1} sonuç</value>
+  </data>
+  <data name="Search_InstallSelectedCount" xml:space="preserve">
+    <value>Seçilenleri kur ({0})</value>
+  </data>
+  <data name="Search_Installed" xml:space="preserve">
+    <value>Kurulu</value>
+  </data>
   <data name="Search_Empty" xml:space="preserve">
     <value>Sonuç yok. Bir uygulama adı yazıp Enter'a basın.</value>
   </data>

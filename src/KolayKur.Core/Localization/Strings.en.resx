@@ -114,6 +114,15 @@
   <data name="Search_InstallSelected" xml:space="preserve">
     <value>Install selected</value>
   </data>
+  <data name="Search_ResultCount" xml:space="preserve">
+    <value>{1} results for “{0}”</value>
+  </data>
+  <data name="Search_InstallSelectedCount" xml:space="preserve">
+    <value>Install selected ({0})</value>
+  </data>
+  <data name="Search_Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
   <data name="Search_Empty" xml:space="preserve">
     <value>No results. Type an app name and press Enter.</value>
   </data>

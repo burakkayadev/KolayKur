@@ -1,3 +1,4 @@
+using KolayKur.Core.Localization;
 using KolayKur.Core.Models;
 using KolayKur.Core.Queue;
 using KolayKur.Core.Tests.Fakes;
@@ -6,6 +7,8 @@ using KolayKur.Core.Winget;
 
 namespace KolayKur.Core.Tests.ViewModels;
 
+// Sonuç sayısı metni Loc.Instance'tan geldiği için dil testleriyle aynı koleksiyonda çalışır.
+[Collection("Localization")]
 public sealed class SearchViewModelTests : QueueTestBase
 {
     private readonly FakeWingetClient client = new()
@@ -102,6 +105,107 @@ public sealed class SearchViewModelTests : QueueTestBase
         Assert.Equal(
             [(OperationKind.Install, "Alpha.App"), (OperationKind.Install, "Gamma.Tool")],
             queue.Items.Select(item => (item.Kind, item.Package.Id)));
+    }
+
+    [Fact]
+    public async Task Selected_count_follows_checkboxes()
+    {
+        // Arrange: 3 results.
+        var viewModel = CreateViewModel(out _);
+        viewModel.Query = ".";
+        await viewModel.SearchCommand.ExecuteAsync(null);
+        Assert.Equal(0, viewModel.SelectedCount);
+        Assert.False(viewModel.InstallSelectedCommand.CanExecute(null));
+
+        // Act + Assert: two selected.
+        viewModel.Results[0].IsSelected = true;
+        viewModel.Results[2].IsSelected = true;
+        Assert.Equal(2, viewModel.SelectedCount);
+        Assert.True(viewModel.InstallSelectedCommand.CanExecute(null));
+
+        // Act + Assert: selection cleared.
+        viewModel.Results[0].IsSelected = false;
+        viewModel.Results[2].IsSelected = false;
+        Assert.Equal(0, viewModel.SelectedCount);
+        Assert.False(viewModel.InstallSelectedCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Selected_count_resets_when_results_are_replaced()
+    {
+        var viewModel = CreateViewModel(out _);
+        viewModel.Query = ".";
+        await viewModel.SearchCommand.ExecuteAsync(null);
+        viewModel.Results[0].IsSelected = true;
+        var old = viewModel.Results[0];
+        Assert.Equal(1, viewModel.SelectedCount);
+
+        viewModel.Query = "beta";
+        await viewModel.SearchCommand.ExecuteAsync(null);
+        Assert.Equal(0, viewModel.SelectedCount);
+        old.IsSelected = false; // eski satır artık sayıyı etkilemez
+        Assert.Equal(0, viewModel.SelectedCount);
+        Assert.False(viewModel.InstallSelectedCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task Result_count_text_shows_query_and_count()
+    {
+        Loc.Instance.SetLanguage("tr");
+        client.Catalog = [Pkg("Git.Git"), Pkg("GitHub.GitHubDesktop"), Pkg("Other.App")];
+        var viewModel = CreateViewModel(out _);
+        Assert.Null(viewModel.ResultCountText);
+
+        viewModel.Query = "git";
+        await viewModel.SearchCommand.ExecuteAsync(null);
+
+        Assert.Equal(string.Format(Loc.Instance["Search_ResultCount"], "git", 2), viewModel.ResultCountText);
+    }
+
+    [Fact]
+    public async Task Result_count_text_follows_language()
+    {
+        Loc.Instance.SetLanguage("tr");
+        try
+        {
+            client.Catalog = [Pkg("Git.Git"), Pkg("GitHub.GitHubDesktop")];
+            var viewModel = CreateViewModel(out _);
+            viewModel.Query = "git";
+            await viewModel.SearchCommand.ExecuteAsync(null);
+            var changed = new List<string?>();
+            viewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(SearchViewModel.ResultCountText))
+                {
+                    changed.Add(e.PropertyName);
+                }
+            };
+
+            Loc.Instance.SetLanguage("en");
+
+            Assert.NotEmpty(changed);
+            Assert.Equal(string.Format(Loc.Instance["Search_ResultCount"], "git", 2), viewModel.ResultCountText);
+            Assert.Contains("results", viewModel.ResultCountText, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Loc.Instance.SetLanguage("tr");
+        }
+    }
+
+    [Fact]
+    public async Task Result_count_text_is_cleared_on_failure()
+    {
+        Loc.Instance.SetLanguage("tr");
+        var viewModel = CreateViewModel(out _);
+        viewModel.Query = "alpha";
+        await viewModel.SearchCommand.ExecuteAsync(null);
+        Assert.NotNull(viewModel.ResultCountText);
+
+        client.ListException = new CatalogUnavailableException("çevrimdışı");
+        await viewModel.SearchCommand.ExecuteAsync(null);
+
+        Assert.Null(viewModel.ResultCountText);
     }
 
     [Fact]
