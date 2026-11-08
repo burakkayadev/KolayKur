@@ -178,11 +178,15 @@ Bu bilgisayardaki takılı bileşen arızası format sonrası yeniden oluşturul
 
 ## Dağıtım
 
-Program tek `KolayKur.exe` dosyası olarak GitHub'ın Releases sayfasına konur. .NET içine gömülü gelir. Tahmini boyutu 70–150 MB'dır ve ilk paketlemede ölçülür.
+Program tek `KolayKur.exe` dosyası olarak GitHub'ın Releases sayfasına konur. .NET içine gömülü gelir.
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish src/KolayKur.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out/release
 ```
+
+**Ölçüm (8 Kasım 2026):** `out/release/KolayKur.exe` 68,5 MB'dır. Sıkıştırma (`EnableCompressionInSingleFile`) uygulama projesinde açıktır. Sıkıştırmasız boyut 159,7 MB'dı. Dosya tek başına yeni bir klasöre kopyalanıp açıldığında ana pencere en kötü 3 saniyede geldi (sıkıştırmasızda 1,7 saniye), bu yüzden sıkıştırma kaldı.
+
+**Winmd kararı (8 Kasım 2026):** Winget nesneleri `Microsoft.Management.Deployment.winmd` dosyası exe'nin yanında değilse oluşturulamaz (`0x80073D54`). Tek dosya paketine gömülen winmd diske yazılmaz. Bu yüzden winmd programa kaynak olarak gömülür ve program açılışta, winget'e ilk dokunuştan önce, yoksa exe'nin yanına çıkarır. Böylece "tek `.exe`" sözü korunur. Klasör yazılamazsa program bunu söyler ve `KolayKur.exe`'yi Masaüstü gibi yazılabilir bir klasöre taşımayı ister. Yayın klasörüne ayrı bir winmd konmaz.
 
 - **Depo:** Arkadaşların hesap açmadan indirebilmesi için depo herkese açık olmalıdır. Yüklemeden önce proje sahibine sorulur.
 - **Windows uyarısı:** Program imzasız olduğu için ilk açılışta "Windows bilgisayarınızı korudu" uyarısı çıkabilir. "Ek bilgi" ve "Yine de çalıştır" ile geçilir. Bu bilgi GitHub sayfasına yazılır.
