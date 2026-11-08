@@ -1,4 +1,4 @@
-using System.Globalization;
+using System.Xml;
 using System.Xml.Linq;
 using Windows.ApplicationModel;
 using Windows.Management.Deployment;
@@ -58,21 +58,33 @@ public sealed class WindowsSystemProbe : ISystemProbe
 
     private static IReadOnlyList<PackageDependency> ReadDependencies(string manifestPath)
     {
-        if (!File.Exists(manifestPath))
+        try
         {
-            return [];
+            return ParseDependencies(File.ReadAllText(manifestPath));
         }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
+        {
+            throw new PackageManifestUnreadableException(
+                $"App Installer paket bildirimi okunamadı ({manifestPath}): {ex.Message}", ex);
+        }
+    }
 
-        var manifest = XDocument.Load(manifestPath);
+    internal static IReadOnlyList<PackageDependency> ParseDependencies(string manifestXml)
+    {
+        var manifest = XDocument.Parse(manifestXml);
         var dependencies = new List<PackageDependency>();
         foreach (var element in manifest.Descendants().Where(e => e.Name.LocalName == "PackageDependency"))
         {
             var name = element.Attribute("Name")?.Value;
             var minVersion = element.Attribute("MinVersion")?.Value;
-            if (name is not null && Version.TryParse(minVersion, out var parsed))
+            if (name is null)
             {
-                dependencies.Add(new PackageDependency(name, parsed));
+                continue;
             }
+
+            // Sürüm eksik veya çözülemiyorsa 0.0 sayılır; en azından paketin varlığı denetlenir.
+            var parsed = Version.TryParse(minVersion, out var version) ? version : new Version(0, 0);
+            dependencies.Add(new PackageDependency(name, parsed));
         }
 
         return dependencies;

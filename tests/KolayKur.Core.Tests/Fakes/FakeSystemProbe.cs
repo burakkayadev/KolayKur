@@ -10,6 +10,8 @@ public sealed class FakeSystemProbe : ISystemProbe
 
     public IReadOnlyList<PackageDependency> Dependencies { get; init; } = [];
 
+    public Exception? DependenciesException { get; init; }
+
     public IReadOnlyDictionary<string, Version> Registered { get; init; } =
         new Dictionary<string, Version>(StringComparer.OrdinalIgnoreCase);
 
@@ -18,7 +20,8 @@ public sealed class FakeSystemProbe : ISystemProbe
 
     public Version? GetAppInstallerVersion() => AppInstallerVersion;
 
-    public IReadOnlyList<PackageDependency> GetAppInstallerDependencies() => Dependencies;
+    public IReadOnlyList<PackageDependency> GetAppInstallerDependencies() =>
+        DependenciesException is null ? Dependencies : throw DependenciesException;
 
     public Version? GetRegisteredVersion(string packageName) =>
         Registered.TryGetValue(packageName, out var version) ? version : null;

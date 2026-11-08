@@ -15,3 +15,17 @@ public interface ISystemProbe
 
     Version? GetRegisteredVersion(string packageName);
 }
+
+/// <summary>App Installer paketinin AppxManifest.xml dosyası yok, okunamıyor veya bozuk.</summary>
+public sealed class PackageManifestUnreadableException : Exception
+{
+    public PackageManifestUnreadableException(string message)
+        : base(message)
+    {
+    }
+
+    public PackageManifestUnreadableException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+}

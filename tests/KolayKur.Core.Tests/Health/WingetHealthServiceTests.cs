@@ -97,6 +97,67 @@ public class WingetHealthServiceTests
     }
 
     [Fact]
+    public async Task Unreadable_manifest_is_not_installed()
+    {
+        var probe = new FakeSystemProbe
+        {
+            WingetResult = WingetFailed,
+            AppInstallerVersion = AppInstaller,
+            DependenciesException = new PackageManifestUnreadableException("AppxManifest.xml bulunamadı"),
+        };
+
+        var diagnosis = await DiagnoseAsync(probe);
+
+        Assert.Equal(WingetState.NotInstalled, diagnosis.State);
+        Assert.Null(diagnosis.BrokenDependency);
+        Assert.False(string.IsNullOrWhiteSpace(diagnosis.Detail));
+        Assert.Contains("AppxManifest.xml bulunamadı", diagnosis.Detail);
+    }
+
+    [Fact]
+    public async Task Other_probe_exceptions_are_not_swallowed()
+    {
+        var probe = new FakeSystemProbe
+        {
+            WingetResult = WingetFailed,
+            AppInstallerVersion = AppInstaller,
+            DependenciesException = new InvalidOperationException("beklenmeyen"),
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => DiagnoseAsync(probe));
+    }
+
+    [Fact]
+    public void Unparsable_min_version_is_kept_as_zero()
+    {
+        const string manifest = """
+            <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10">
+              <Dependencies>
+                <PackageDependency Name="Good.Dep" MinVersion="1.2.3.4" />
+                <PackageDependency Name="Bad.Version" MinVersion="abc" />
+                <PackageDependency Name="No.Version" />
+              </Dependencies>
+            </Package>
+            """;
+
+        var dependencies = WindowsSystemProbe.ParseDependencies(manifest);
+
+        Assert.Equal(
+            [
+                new PackageDependency("Good.Dep", new Version(1, 2, 3, 4)),
+                new PackageDependency("Bad.Version", new Version(0, 0)),
+                new PackageDependency("No.Version", new Version(0, 0)),
+            ],
+            dependencies);
+    }
+
+    [Fact]
+    public void Corrupt_manifest_throws_xml_exception()
+    {
+        Assert.ThrowsAny<System.Xml.XmlException>(() => WindowsSystemProbe.ParseDependencies("<Package><oops"));
+    }
+
+    [Fact]
     public async Task Hung_process_times_out()
     {
         var stopwatch = Stopwatch.StartNew();

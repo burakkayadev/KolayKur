@@ -23,7 +23,19 @@ public sealed class WingetHealthService(ISystemProbe probe)
             return new WingetDiagnosis(WingetState.NotInstalled, null, "Uygulama Yükleyici (App Installer) kurulu değil.");
         }
 
-        foreach (var dependency in probe.GetAppInstallerDependencies())
+        IReadOnlyList<PackageDependency> dependencies;
+        try
+        {
+            dependencies = probe.GetAppInstallerDependencies();
+        }
+        catch (PackageManifestUnreadableException ex)
+        {
+            // Hasarlı paket en çok "yok" durumuna yakındır: paket ve bağımlılıkları yeniden kurulmalı.
+            return new WingetDiagnosis(
+                WingetState.NotInstalled, null, $"App Installer paket bildirimi okunamıyor: {ex.Message}");
+        }
+
+        foreach (var dependency in dependencies)
         {
             var registered = probe.GetRegisteredVersion(dependency.Name);
             if (registered is null)
