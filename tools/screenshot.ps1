@@ -6,7 +6,8 @@
   - Geçici bir veri klasörü kullanır (KOLAYKUR_DATA_DIR); sahibinin gerçek %LocalAppData%\KolayKur klasörüne dokunmaz.
   - Yalnızca sol menü (RadioButton) düğmelerine, -Search verilirse arama kutusuna (AutomationId SearchBox) ile "Ara" düğmesine (SearchButton) ve -OpenPane verilirse
     başlıktaki "İşlemler" geçiş düğmesine basar (yalnızca paneli açar).
-    Kur, Güncelle, Kaldır, Listeden kur, Onar ve başka hiçbir düğmeye basılmaz.
+    -SetTheme Light|Dark verilirse (yalnız -Page Settings) yalnızca ilgili tema düğmesine (ThemeLight/ThemeDark) basar ve ~1 sn bekler.
+    Kur, Güncelle, Kaldır, Listeden kur, Listeyi dışa aktar, Onar, Günlüğü aç, dil seçici ve başka hiçbir düğmeye basılmaz.
   - Başlattığı süreci her durumda kapatır ve geçici klasörü siler.
 
 .EXAMPLE
@@ -21,6 +22,7 @@ param(
     [int]$Width = 1100,
     [int]$Height = 720,
     [string]$Search = '',
+    [ValidateSet('', 'Light', 'Dark')] [string]$SetTheme = '',
     [switch]$OpenPane,
     [string]$Out = 'out\screenshots\screenshot.png',
     [string]$Exe = ''
@@ -121,6 +123,15 @@ try {
         $tp = $toggle.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)
         if ($tp.Current.ToggleState -ne [System.Windows.Automation.ToggleState]::On) { $tp.Toggle() }
         Start-Sleep -Milliseconds 600
+    }
+
+    # Yalnızca Ayarlar'daki tema düğmesi (AutomationId ThemeLight/ThemeDark): çalışırken tema değişimini sınar.
+    # Bu düğme yalnız tema ayarını değiştirir (geçici veri klasöründeki settings.json'a yazar), güvenlidir.
+    if ($SetTheme) {
+        if ($Page -ne 'Settings') { throw '-SetTheme yalnizca -Page Settings ile kullanilir.' }
+        $themeButton = Wait-Until { Find-ById $root ("Theme" + $SetTheme) } 10 'tema dugmesi'
+        $themeButton.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
+        Start-Sleep -Milliseconds 1000
     }
 
     if ($Search) {

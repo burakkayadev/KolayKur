@@ -140,4 +140,33 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- Bölümlü seçim düğmesi (RadioButton): seçiliyken vurgu zemini ve vurgu üstü yazı; klavye odağında vurgu çerçevesi. -->
+    <Style x:Key="SegmentButtonStyle" TargetType="RadioButton">
+        <Setter Property="MinWidth" Value="76" />
+        <Setter Property="Padding" Value="14,5" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource RailButtonFocusVisualStyle}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Fill" CornerRadius="5" Background="Transparent" Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <TextBlock Text="{TemplateBinding Content}" FontSize="13"
+                                   HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Fill" Property="Background" Value="{DynamicResource BrandAccentBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource BrandAccentForegroundBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

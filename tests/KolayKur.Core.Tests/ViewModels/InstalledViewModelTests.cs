@@ -1,4 +1,5 @@
 using KolayKur.Core.Lists;
+using KolayKur.Core.Localization;
 using KolayKur.Core.Models;
 using KolayKur.Core.Queue;
 using KolayKur.Core.Tests.Fakes;
@@ -7,6 +8,8 @@ using KolayKur.Core.Winget;
 
 namespace KolayKur.Core.Tests.ViewModels;
 
+// CountText dili Loc.Instance üzerinden okuduğu için dil testleriyle aynı koleksiyonda çalışır.
+[Collection("Localization")]
 public sealed class InstalledViewModelTests : QueueTestBase
 {
     private const string Version = "1.29.380";
@@ -24,6 +27,87 @@ public sealed class InstalledViewModelTests : QueueTestBase
         var used = other ?? client;
         var queue = CreateQueue(used);
         return (new InstalledViewModel(used, queue, dialogs, () => Version), queue);
+    }
+
+    // ---- Yeniden deneme ve sayı metni ----
+
+    [Fact]
+    public async Task List_file_error_cannot_retry()
+    {
+        var path = TempFile("bozuk-yeniden.json");
+        await File.WriteAllTextAsync(path, "{ bu json değil");
+        dialogs.OpenFilePath = path;
+        var (viewModel, _) = Create();
+
+        viewModel.ImportCommand.Execute(null);
+
+        Assert.Equal("Error_ListFile", viewModel.ErrorKey);
+        Assert.False(viewModel.CanRetry);
+    }
+
+    [Fact]
+    public async Task Load_failure_can_retry_and_notifies()
+    {
+        var (viewModel, _) = Create();
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        client.ListException = new CatalogUnavailableException("çevrimdışı");
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.True(viewModel.CanRetry);
+        Assert.Contains(nameof(InstalledViewModel.CanRetry), changed);
+
+        client.ListException = new InvalidOperationException("beklenmeyen");
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.True(viewModel.CanRetry);
+
+        client.ListException = null;
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.False(viewModel.CanRetry);
+    }
+
+    [Fact]
+    public async Task Count_text_shows_package_count()
+    {
+        client.Installed = [Pkg("A.One"), Pkg("B.Two"), Pkg("C.Three")];
+        var (viewModel, _) = Create();
+        Assert.Null(viewModel.CountText);
+
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal(string.Format(Loc.Instance["Installed_Count"], 3), viewModel.CountText);
+    }
+
+    [Fact]
+    public async Task Count_text_is_null_when_empty()
+    {
+        client.Installed = [];
+        var (viewModel, _) = Create();
+
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Null(viewModel.CountText);
+    }
+
+    [Fact]
+    public async Task Count_text_follows_language()
+    {
+        var (viewModel, _) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        try
+        {
+            Loc.Instance.SetLanguage("en");
+
+            Assert.Equal("2 apps", viewModel.CountText);
+            Assert.Contains(nameof(InstalledViewModel.CountText), changed);
+        }
+        finally
+        {
+            Loc.Instance.SetLanguage("tr");
+        }
     }
 
     // ---- Yükleme ----

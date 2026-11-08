@@ -339,4 +339,31 @@ Devam edilsin mi?</value>
   <data name="Error_Unhandled" xml:space="preserve">
     <value>Beklenmeyen bir hata oluştu. Ayrıntılar günlük dosyasına yazıldı. Program çalışmaya devam ediyor; sorun sürerse programı kapatıp yeniden açın.</value>
   </data>
+  <data name="Installed_Count" xml:space="preserve">
+    <value>{0} uygulama</value>
+  </data>
+  <data name="Theme_Title" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="Theme_Description" xml:space="preserve">
+    <value>Uygulamanın açık ya da koyu görünmesi. &quot;Sistem&quot;, Windows ayarını izler.</value>
+  </data>
+  <data name="Theme_System" xml:space="preserve">
+    <value>Sistem</value>
+  </data>
+  <data name="Theme_Light" xml:space="preserve">
+    <value>Açık</value>
+  </data>
+  <data name="Theme_Dark" xml:space="preserve">
+    <value>Koyu</value>
+  </data>
+  <data name="Settings_LanguageDescription" xml:space="preserve">
+    <value>Arayüz dili. Değişiklik hemen uygulanır.</value>
+  </data>
+  <data name="Settings_LogDescription" xml:space="preserve">
+    <value>Bir sorun olursa ne olduğunu bu dosya gösterir.</value>
+  </data>
+  <data name="About_Version" xml:space="preserve">
+    <value>Sürüm {0}</value>
+  </data>
 </root>

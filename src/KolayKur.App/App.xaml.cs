@@ -135,9 +135,13 @@ public partial class App : Application
             new SearchViewModel(client, queue, fileLog),
             new UpdatesViewModel(client, queue, fileLog),
             new InstalledViewModel(client, queue, dialogs, () => shell.WingetVersion, fileLog),
-            new SettingsViewModel(shell, fileLog, dialogs, AppPaths.SettingsFile, themes),
+            new SettingsViewModel(shell, fileLog, dialogs, AppPaths.SettingsFile, themes) { AppVersion = ReadAppVersion() },
             new OperationListViewModel(queue));
     }
+
+    // Uygulama derlemesinin sürümü, 3 bölümlü ("1.0.0"); okunamazsa boş (Hakkında yine açılır).
+    private static string ReadAppVersion() =>
+        typeof(App).Assembly.GetName().Version?.ToString(3) ?? string.Empty;
 
     private sealed record Composition(
         ShellViewModel Shell,

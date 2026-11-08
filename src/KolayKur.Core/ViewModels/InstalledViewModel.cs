@@ -37,6 +37,7 @@ public sealed partial class InstalledViewModel : ObservableObject
     private CancellationTokenSource? currentLoad;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRetry))]
     private string? errorKey;
 
     /// <summary>Son başlatılan yükleme sürüyor.</summary>
@@ -58,9 +59,17 @@ public sealed partial class InstalledViewModel : ObservableObject
         this.log = log;
         queue.BatchCompleted += OnBatchCompleted;
         Packages.CollectionChanged += OnPackagesChanged;
+        Loc.Instance.WhenLanguageChanges(this, static self => self.OnPropertyChanged(nameof(CountText)));
     }
 
     public ObservableCollection<PackageInfo> Packages { get; } = [];
+
+    /// <summary>"Tekrar dene" yalnız yükleme hatalarında anlamlıdır; liste dosyası hatalarında yoktur.</summary>
+    public bool CanRetry => ErrorKey is SearchViewModel.NoInternetKey or SearchViewModel.GenericErrorKey;
+
+    /// <summary>"12 uygulama"; liste boşken <c>null</c>. Dil değişince yenilenir.</summary>
+    public string? CountText =>
+        Packages.Count > 0 ? string.Format(CultureInfo.InvariantCulture, Loc.Instance["Installed_Count"], Packages.Count) : null;
 
     /// <summary>Listeyi yükler; hata sonrası "Tekrar dene" de bu komuttur.</summary>
     [RelayCommand(AllowConcurrentExecutions = true)]
@@ -225,8 +234,11 @@ public sealed partial class InstalledViewModel : ObservableObject
         return string.Format(CultureInfo.InvariantCulture, Loc.Instance["Installed_ConfirmImport"], identifiers.Count, names);
     }
 
-    private void OnPackagesChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+    private void OnPackagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
         ExportCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CountText));
+    }
 
     // Olay arayüz bağlamında gelir, yükleme doğrudan başlatılabilir. LoadAsync tüm hataları kendi içinde ele alır.
     private void OnBatchCompleted(object? sender, BatchSummary summary) => _ = LoadCommand.ExecuteAsync(null);
