@@ -1,0 +1,11 @@
+<Project>
+
+  <PropertyGroup>
+    <ComInteropVersion>1.29.380</ComInteropVersion>
+    <!-- winget nesneleri dış süreçte (CLSCTX_LOCAL_SERVER) oluşturulur; paketin yerel Microsoft.Management.Deployment.dll dosyası kopyalanmaz. -->
+    <MicrosoftManagementDeployment-FactoryLinkage>none</MicrosoftManagementDeployment-FactoryLinkage>
+    <!-- .winmd dosyasını paket hedefleri yerine Directory.Build.targets kopyalar. -->
+    <MicrosoftManagementDeployment-OutputWinMD>false</MicrosoftManagementDeployment-OutputWinMD>
+  </PropertyGroup>
+
+</Project>

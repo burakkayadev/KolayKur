@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    Dış süreç winget nesneleri için COM, arayüzleri .winmd üzerinden (metadata-based marshaling) çözer.
+    Dosya, çalıştıran exe'nin yanında bulunmazsa QueryInterface 0x80073D54 ile başarısız olur.
+    Core dışındaki her projenin (App, Probe, Tests) çıktısına ve yayınına kopyalanır.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'KolayKur.Core'">
+    <Content Include="$(NuGetPackageRoot)microsoft.windowspackagemanager.cominterop/$(ComInteropVersion)/lib/uap10.0/Microsoft.Management.Deployment.winmd"
+             Link="Microsoft.Management.Deployment.winmd"
+             Visible="false"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest"
+             ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>
