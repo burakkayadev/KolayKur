@@ -65,6 +65,41 @@ public class ComWingetClientRealTests
     }
 
     [Fact]
+    public async Task Search_finds_store_app()
+    {
+        var results = await client.SearchAsync("netflix", Timeout());
+
+        Assert.Contains(results, p =>
+            string.Equals(p.Source, PackageSources.MicrosoftStore, StringComparison.OrdinalIgnoreCase)
+            && p.Name.Contains("Netflix", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Search_marks_winget_source()
+    {
+        var results = await client.SearchAsync("git", Timeout());
+
+        var git = Assert.Single(results, p => string.Equals(p.Id, "Git.Git", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(PackageSources.Winget, git.Source, ignoreCase: true);
+    }
+
+    [Fact]
+    public async Task Unknown_store_id_is_not_found()
+    {
+        var outcome = await client.InstallAsync("9ZZZZZZZZZZZ", new RecordingProgress(), Timeout());
+
+        Assert.Equal(OperationStatus.NotFound, outcome.Status);
+    }
+
+    [Fact]
+    public async Task Installed_items_carry_source()
+    {
+        var installed = await client.GetInstalledAsync(Timeout());
+
+        Assert.Contains(installed, p => string.Equals(p.Source, PackageSources.Winget, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Calls_do_not_post_back_to_caller_context()
     {
         var recorder = new RecordingSynchronizationContext();

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using KolayKur.Core.Models;
+using KolayKur.Core.Support;
 using Microsoft.Management.Deployment;
 
 namespace KolayKur.Core.Winget;
@@ -12,7 +13,7 @@ namespace KolayKur.Core.Winget;
 /// <c>ConfigureAwait(false)</c> kullanır: eşzamanlı COM çağrıları (nesne oluşturma, liste okuma) ve devamlar
 /// çağıranın <see cref="SynchronizationContext"/> bağlamında (örn. arayüz iş parçacığı) çalışmaz.
 /// </summary>
-public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
+public sealed class ComWingetClient(WingetComFactory factory, FileLog? log = null) : IWingetClient
 {
     private const int SearchLimit = 50;
     private const double PercentScale = 100;
@@ -37,12 +38,19 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
 
     private async Task<IReadOnlyList<PackageInfo>> SearchCoreAsync(string query, CancellationToken ct)
     {
-        // Yalnızca uzak (winget) paketler döner, ama yüklü katalogla eşleşenlerin InstalledVersion alanı dolar.
-        // (RemotePackagesFromRemoteCatalogs ile bu alan boş kalıyordu; elle denenip doğrulandı.)
-        var (_, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.RemotePackagesFromAllCatalogs, ct).ConfigureAwait(false);
-        var filter = MatchFilter(PackageMatchField.CatalogDefault, PackageFieldMatchOption.ContainsCaseInsensitive, query);
-        var packages = await FindAsync(catalog, filter, SearchLimit, ct).ConfigureAwait(false);
+        var packages = await StoreFallback.RunAsync(
+            includeStore => SearchOnceAsync(includeStore, query, ct), log, ct).ConfigureAwait(false);
         return [.. packages.Take(SearchLimit).Select(ToInfo)];
+    }
+
+    private async Task<IReadOnlyList<CatalogPackage>> SearchOnceAsync(bool includeStore, string query, CancellationToken ct)
+    {
+        // Yalnızca uzak paketler döner, ama yüklü katalogla eşleşenlerin InstalledVersion alanı dolar.
+        // (RemotePackagesFromRemoteCatalogs ile bu alan boş kalıyordu; elle denenip doğrulandı.)
+        var (_, catalog) = await ConnectCompositeAsync(
+            includeStore, CompositeSearchBehavior.RemotePackagesFromAllCatalogs, ct).ConfigureAwait(false);
+        var filter = MatchFilter(PackageMatchField.CatalogDefault, PackageFieldMatchOption.ContainsCaseInsensitive, query);
+        return await FindAsync(catalog, filter, SearchLimit, ct).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<PackageInfo>> GetInstalledCoreAsync(CancellationToken ct) =>
@@ -54,8 +62,8 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     private async Task<OperationOutcome> InstallCoreAsync(
         string packageId, IProgress<OperationProgress> progress, CancellationToken ct)
     {
-        var (manager, catalog) = await ConnectRemoteAsync(ct).ConfigureAwait(false);
-        var package = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
+        var (manager, package) = await ResolveExactAsync(
+            includeStore => ConnectRemoteAsync(includeStore, ct), packageId, ct).ConfigureAwait(false);
         if (package is null)
         {
             return NotFound(packageId);
@@ -68,8 +76,10 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     private async Task<OperationOutcome> UpgradeCoreAsync(
         string packageId, IProgress<OperationProgress> progress, CancellationToken ct)
     {
-        var (manager, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
-        var package = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
+        var (manager, package) = await ResolveExactAsync(
+            includeStore => ConnectCompositeAsync(includeStore, CompositeSearchBehavior.LocalCatalogs, ct),
+            packageId,
+            ct).ConfigureAwait(false);
         if (package?.InstalledVersion is null)
         {
             return NotFound(packageId);
@@ -82,8 +92,10 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     private async Task<OperationOutcome> UninstallCoreAsync(
         string packageId, IProgress<OperationProgress> progress, CancellationToken ct)
     {
-        var (manager, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
-        var package = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
+        var (manager, package) = await ResolveExactAsync(
+            includeStore => ConnectCompositeAsync(includeStore, CompositeSearchBehavior.LocalCatalogs, ct),
+            packageId,
+            ct).ConfigureAwait(false);
         if (package?.InstalledVersion is null)
         {
             return NotFound(packageId);
@@ -125,40 +137,74 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
         }
     }
 
-    /// <summary>Yalnızca uzak <c>winget</c> kataloğuna bağlanır.</summary>
-    private Task<(PackageManager Manager, PackageCatalog Catalog)> ConnectRemoteAsync(CancellationToken ct) =>
-        ConnectAsync((manager, remote) => remote, ct);
+    /// <summary>
+    /// Kurma için uzak katalog: yalnız <c>winget</c> ya da (<paramref name="includeStore"/>) <c>winget</c> ile
+    /// <c>msstore</c> birlikte (yüklü katalog olmadan).
+    /// </summary>
+    private Task<(PackageManager Manager, PackageCatalog Catalog)> ConnectRemoteAsync(bool includeStore, CancellationToken ct) =>
+        includeStore
+            ? ConnectCompositeAsync(true, CompositeSearchBehavior.RemotePackagesFromRemoteCatalogs, ct)
+            : ConnectAsync(false, (manager, remotes) => remotes[0], ct);
 
-    /// <summary><c>winget</c> kataloğunu yüklü katalogla birleştiren bir katalog açar.</summary>
+    /// <summary>Uzak katalogları (winget, istenirse msstore) birleştiren bir katalog açar.</summary>
     private Task<(PackageManager Manager, PackageCatalog Catalog)> ConnectCompositeAsync(
-        CompositeSearchBehavior behavior, CancellationToken ct) =>
+        bool includeStore, CompositeSearchBehavior behavior, CancellationToken ct) =>
         ConnectAsync(
-            (manager, remote) =>
+            includeStore,
+            (manager, remotes) =>
             {
                 var composite = factory.CreateCompositeOptions();
-                composite.Catalogs.Add(remote);
+                foreach (var remote in remotes)
+                {
+                    composite.Catalogs.Add(remote);
+                }
+
                 composite.CompositeSearchBehavior = behavior;
                 return manager.CreateCompositePackageCatalog(composite);
             },
             ct);
 
     private async Task<(PackageManager Manager, PackageCatalog Catalog)> ConnectAsync(
-        Func<PackageManager, PackageCatalogReference, PackageCatalogReference> select, CancellationToken ct)
+        bool includeStore,
+        Func<PackageManager, IReadOnlyList<PackageCatalogReference>, PackageCatalogReference> select,
+        CancellationToken ct)
     {
         try
         {
             var manager = factory.CreatePackageManager();
-            var remote = manager.GetPredefinedPackageCatalog(PredefinedPackageCatalog.OpenWindowsCatalog);
-            var connect = await select(manager, remote).ConnectAsync().AsTask(ct).ConfigureAwait(false);
+            var remotes = new List<PackageCatalogReference>
+            {
+                manager.GetPredefinedPackageCatalog(PredefinedPackageCatalog.OpenWindowsCatalog),
+            };
+            if (includeStore)
+            {
+                var store = manager.GetPredefinedPackageCatalog(PredefinedPackageCatalog.MicrosoftStore);
+                store.AcceptSourceAgreements = true;
+                remotes.Add(store);
+            }
+
+            var connect = await select(manager, remotes).ConnectAsync().AsTask(ct).ConfigureAwait(false);
             return connect.Status == ConnectResultStatus.Ok
                 ? (manager, connect.PackageCatalog)
-                : throw new CatalogUnavailableException($"could not connect to the winget catalog: {connect.Status}.");
+                : throw new CatalogUnavailableException($"could not connect to the package catalog: {connect.Status}.");
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or CatalogUnavailableException))
         {
-            throw new CatalogUnavailableException($"could not connect to the winget catalog: {ex.Message}", ex);
+            throw new CatalogUnavailableException($"could not connect to the package catalog: {ex.Message}", ex);
         }
     }
+
+    /// <summary>Önce iki kaynakla, olmazsa yalnız winget ile bağlanıp kesin kimliği arar.</summary>
+    private Task<(PackageManager Manager, CatalogPackage? Package)> ResolveExactAsync(
+        Func<bool, Task<(PackageManager Manager, PackageCatalog Catalog)>> connect, string packageId, CancellationToken ct) =>
+        StoreFallback.RunAsync(
+            async includeStore =>
+            {
+                var (manager, catalog) = await connect(includeStore).ConfigureAwait(false);
+                return (manager, await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false));
+            },
+            log,
+            ct);
 
     private async Task<CatalogPackage?> FindExactAsync(PackageCatalog catalog, string packageId, CancellationToken ct)
     {
@@ -170,8 +216,15 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
     /// <summary>Yüklü katalogdaki her paket (winget kataloğundaki eşleşmeleriyle birlikte).</summary>
     private async Task<IReadOnlyList<CatalogPackage>> FindInstalledAsync(CancellationToken ct)
     {
-        var (_, catalog) = await ConnectCompositeAsync(CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
-        return await FindAsync(catalog, null, 0, ct).ConfigureAwait(false);
+        return await StoreFallback.RunAsync(
+            async includeStore =>
+            {
+                var (_, catalog) = await ConnectCompositeAsync(
+                    includeStore, CompositeSearchBehavior.LocalCatalogs, ct).ConfigureAwait(false);
+                return await FindAsync(catalog, null, 0, ct).ConfigureAwait(false);
+            },
+            log,
+            ct).ConfigureAwait(false);
     }
 
     private PackageMatchFilter MatchFilter(PackageMatchField field, PackageFieldMatchOption option, string value)
@@ -207,11 +260,11 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
             var result = await catalog.FindPackagesAsync(options).AsTask(ct).ConfigureAwait(false);
             return result.Status == FindPackagesResultStatus.Ok
                 ? PackagesOf(result.Matches)
-                : throw new CatalogUnavailableException($"winget catalog search failed: {result.Status}.");
+                : throw new CatalogUnavailableException($"package catalog search failed: {result.Status}.");
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or CatalogUnavailableException))
         {
-            throw new CatalogUnavailableException($"winget catalog search failed: {ex.Message}", ex);
+            throw new CatalogUnavailableException($"package catalog search failed: {ex.Message}", ex);
         }
     }
 
@@ -239,7 +292,8 @@ public sealed class ComWingetClient(WingetComFactory factory) : IWingetClient
             package.Name,
             available?.Publisher ?? installed?.Publisher ?? "",
             NullIfEmpty(installed?.Version),
-            NullIfEmpty(available?.Version));
+            NullIfEmpty(available?.Version),
+            NullIfEmpty(available?.PackageCatalog?.Info?.Name));
     }
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;

@@ -119,7 +119,7 @@ public partial class App : Application
         var fileLog = log ??= new FileLog(AppPaths.Logs);
         var health = new WingetHealthService(new WindowsSystemProbe());
         var repair = new WingetRepairService(new WindowsRepairActions(), health, fileLog);
-        var client = new ComWingetClient(new WingetComFactory());
+        var client = new ComWingetClient(new WingetComFactory(), fileLog);
         var queue = new OperationQueue(client, fileLog);
 
         var shell = new ShellViewModel(

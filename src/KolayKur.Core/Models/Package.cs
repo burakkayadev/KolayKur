@@ -1,8 +1,18 @@
 namespace KolayKur.Core.Models;
 
-/// <summary>Bir paketin kataloglardan birleştirilmiş görünümü. Sürümler yoksa <c>null</c>.</summary>
+/// <summary>
+/// Bir paketin kataloglardan birleştirilmiş görünümü. Sürümler yoksa <c>null</c>.
+/// <see cref="Source"/> paketin geldiği katalogun adıdır (<see cref="PackageSources"/>); bilinmiyorsa <c>null</c>.
+/// </summary>
 public sealed record PackageInfo(
-    string Id, string Name, string Publisher, string? InstalledVersion, string? AvailableVersion);
+    string Id, string Name, string Publisher, string? InstalledVersion, string? AvailableVersion, string? Source = null);
+
+/// <summary>Paket kaynaklarının (winget katalog adlarının) kararlı adları.</summary>
+public static class PackageSources
+{
+    public const string Winget = "winget";
+    public const string MicrosoftStore = "msstore";
+}
 
 public enum OperationKind { Install, Upgrade, Uninstall }
 
