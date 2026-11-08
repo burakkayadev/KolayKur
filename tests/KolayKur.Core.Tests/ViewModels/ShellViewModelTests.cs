@@ -120,6 +120,38 @@ public sealed class ShellViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task Close_while_repairing_asks_first()
+    {
+        // Arrange: onarım ilk adımında bekletiliyor; kuyruk boş ama onarım sürüyor.
+        var actions = new GatedRepairActions();
+        var repair = new WingetRepairService(actions, new WingetHealthService(NotInstalledProbe), Log);
+        var shell = CreateShell(NotInstalledProbe, createRepair: d => new RepairViewModel(repair, d, Log));
+        await shell.StartAsync(CancellationToken.None);
+        var running = shell.Repair!.RepairCommand.ExecuteAsync(null);
+        await actions.Entered.WaitAsync(Timeout);
+        dialogs.ConfirmResult = false;
+
+        try
+        {
+            // Act + Assert: onarım sürerken sorar ve yanıtı döndürür.
+            Assert.False(shell.ConfirmClose());
+            dialogs.ConfirmResult = true;
+            Assert.True(shell.ConfirmClose());
+            Assert.Equal(2, dialogs.Confirmed.Count);
+        }
+        finally
+        {
+            actions.Release();
+            await running.WaitAsync(Timeout);
+        }
+
+        // Onarım bitti: artık sormaz.
+        dialogs.Confirmed.Clear();
+        Assert.True(shell.ConfirmClose());
+        Assert.Empty(dialogs.Confirmed);
+    }
+
+    [Fact]
     public void Close_when_idle_does_not_ask()
     {
         var queue = CreateQueue();
@@ -165,6 +197,35 @@ public sealed class ShellViewModelTests : IDisposable
         {
             await Task.Delay(10, cts.Token);
         }
+    }
+
+    /// <summary>İlk adımı (sürüm sorgusu) <see cref="Release"/> çağrılana kadar bekleten onarım eylemleri.</summary>
+    private sealed class GatedRepairActions : IRepairActions
+    {
+        private readonly TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly FakeRepairActions inner = new();
+
+        public Task Entered => entered.Task;
+
+        public void Release() => released.TrySetResult();
+
+        public async Task<WingetRelease> GetLatestReleaseAsync(CancellationToken ct)
+        {
+            entered.TrySetResult();
+            await released.Task.WaitAsync(ct);
+            return await inner.GetLatestReleaseAsync(ct);
+        }
+
+        public Task<string> DownloadAsync(RepairFile file, IProgress<double> progress, CancellationToken ct) =>
+            inner.DownloadAsync(file, progress, ct);
+
+        public IReadOnlyList<string> ExtractDependencies(string zipPath) => inner.ExtractDependencies(zipPath);
+
+        public Task AddPackageAsync(string packagePath, IReadOnlyList<string> dependencyPaths, CancellationToken ct) =>
+            inner.AddPackageAsync(packagePath, dependencyPaths, ct);
+
+        public Task RegisterAppInstallerAsync(CancellationToken ct) => inner.RegisterAppInstallerAsync(ct);
     }
 
     /// <summary>Çalışıp çalışmadığı testin ortasında değişebilen winget; <see cref="Working"/> true olunca sağlıklıdır.</summary>

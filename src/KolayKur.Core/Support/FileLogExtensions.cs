@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace KolayKur.Core.Support;
 
-internal static class FileLogExtensions
+public static class FileLogExtensions
 {
     /// <summary>Günlük yazılamaması (disk dolu vb.) ekranı çökertmesin; hata en azından izleme çıktısına gider.</summary>
     public static void TryError(this FileLog? log, string message, Exception? ex = null)

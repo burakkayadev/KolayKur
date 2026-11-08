@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using KolayKur.Core.Health;
 using KolayKur.Core.Localization;
 using KolayKur.Core.Queue;
@@ -18,10 +19,11 @@ public partial class App : Application
         base.OnStartup(e);
 
         var dialogs = new WpfDialogService();
+        MainWindow? window = null;
         try
         {
             var shell = Compose(dialogs);
-            var window = new MainWindow(shell);
+            window = new MainWindow(shell);
             MainWindow = window;
             window.Show();
 
@@ -29,8 +31,16 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            log?.Error("Program açılırken beklenmeyen hata.", ex);
+            // Günlük de açılamamış olabilir; hata her durumda izleme çıktısına da gider ve asla yutulmaz.
+            Trace.TraceError($"KolayKur açılırken beklenmeyen hata: {ex}");
+            log.TryError("Program açılırken beklenmeyen hata.", ex);
             dialogs.Inform(Loc.Instance["Startup_Failed"]);
+
+            // Pencere hiç açılamadıysa görünmez bir süreç kalmasın; açıksa kullanıcıya bırakılır.
+            if (window is null || !window.IsVisible)
+            {
+                Shutdown(1);
+            }
         }
     }
 

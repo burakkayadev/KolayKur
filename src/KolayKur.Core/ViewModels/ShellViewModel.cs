@@ -54,8 +54,12 @@ public sealed partial class ShellViewModel(
         ShowLicenseNoticeOnce(settings);
     }
 
-    /// <summary>İşlem sürerken kapatmak onay ister; boştayken sormadan kapatılır.</summary>
-    public bool ConfirmClose() => !queue.IsBusy || dialogs.Confirm(Loc.Instance["Close_Confirm"]);
+    /// <summary>
+    /// Kuyrukta işlem sürerken veya winget onarımı çalışırken kapatmak onay ister (yarım kalan kurulum bozuk durum
+    /// bırakabilir); ikisi de boştayken sormadan kapatılır.
+    /// </summary>
+    public bool ConfirmClose() =>
+        !(queue.IsBusy || Repair?.RepairCommand.IsRunning == true) || dialogs.Confirm(Loc.Instance["Close_Confirm"]);
 
     // Yoklama eşzamanlı çağrılar yapar; arayüzü dondurmasın diye havuz iş parçacığına alınır. Sayfa değişiklikleri
     // (bağlamaya giden durum) await sonrasında, çağıranın bağlamında yapılır.
