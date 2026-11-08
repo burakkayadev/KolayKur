@@ -1,0 +1,78 @@
+<!--
+  KolayKur logosu (64x64 tasarım ızgarası). Yalnızca WPF sunum ad alanlarını kullanır; özel tip ve x:Class yoktur,
+  bu yüzden System.Windows.Markup.XamlReader ile doğrudan yüklenebilir (.ico üretimi buradan yapılır).
+  Logo marka görselidir: renkler temayla değişmez.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Tam logo: zemin, K ve sağ altta onay rozeti. -->
+    <DrawingImage x:Key="LogoImage">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <!-- Görüntü sınırlarını 64x64'e sabitler. -->
+                <GeometryDrawing Brush="Transparent">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,64,64" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#0E7C7B">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="4,4,56,56" RadiusX="14" RadiusY="14" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M23,16 L23,48">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#FFFFFF" Thickness="7" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M42,16 L26,32 L42,48">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#FFFFFF" Thickness="7" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFB020">
+                    <GeometryDrawing.Geometry>
+                        <EllipseGeometry Center="46,46" RadiusX="12" RadiusY="12" />
+                    </GeometryDrawing.Geometry>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#0E7C7B" Thickness="3" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M40.5,46.5 L44.5,50.5 L51.5,42.5">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#1B1B1B" Thickness="3.5" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Küçük boyut (24 px ve altı): rozetsiz, yalnızca zemin ve K. -->
+    <DrawingImage x:Key="LogoSmallImage">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="Transparent">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,64,64" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#0E7C7B">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="4,4,56,56" RadiusX="14" RadiusY="14" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M23,16 L23,48">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#FFFFFF" Thickness="7" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M42,16 L26,32 L42,48">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#FFFFFF" Thickness="7" StartLineCap="Round" EndLineCap="Round" LineJoin="Round" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+</ResourceDictionary>

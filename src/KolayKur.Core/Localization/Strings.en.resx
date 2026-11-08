@@ -27,6 +27,18 @@
   <data name="Menu_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
+  <data name="Nav_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Nav_Updates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Nav_Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
   <data name="OperationList_Title" xml:space="preserve">
     <value>Operations</value>
   </data>

@@ -23,7 +23,12 @@ public partial class App : Application
         HookGlobalErrorHandlers(new UnhandledErrorReporter(fileLog, dialogs));
 
         // Kullanıcıya görünen ilk şeyden (klasör yazılamıyor uyarısı, ilk pencere) önce kayıtlı dil uygulanır.
-        Loc.Instance.SetLanguage(AppSettings.Load(AppPaths.SettingsFile).Language);
+        var saved = AppSettings.Load(AppPaths.SettingsFile);
+        Loc.Instance.SetLanguage(saved.Language);
+
+        // Kayıtlı tema, pencere oluşmadan önce uygulanır: açılışta yanlış temada parlama olmaz.
+        var themes = new WpfUiThemeService();
+        themes.Apply(saved.Theme);
 
         MainWindow? window = null;
         try
@@ -35,8 +40,9 @@ public partial class App : Application
                 return;
             }
 
-            var app = Compose(dialogs);
+            var app = Compose(dialogs, themes);
             window = new MainWindow(app.Shell, app.Search, app.Updates, app.Installed, app.Settings, app.Operations);
+            themes.Attach(window);
             MainWindow = window;
             window.Show();
 
@@ -104,7 +110,7 @@ public partial class App : Application
     /// Nesnelerin tek kurulum yeri. <see cref="OperationQueue"/> ve ona abone olan ViewModel'ler arayüz iş
     /// parçacığında kurulmalıdır (kuyruk olaylarını kurulduğu bağlamda tetikler).
     /// </summary>
-    private Composition Compose(IDialogService dialogs)
+    private Composition Compose(IDialogService dialogs, IThemeService themes)
     {
         var fileLog = log ??= new FileLog(AppPaths.Logs);
         var health = new WingetHealthService(new WindowsSystemProbe());
@@ -125,7 +131,7 @@ public partial class App : Application
             new SearchViewModel(client, queue, fileLog),
             new UpdatesViewModel(client, queue, fileLog),
             new InstalledViewModel(client, queue, dialogs, () => shell.WingetVersion, fileLog),
-            new SettingsViewModel(shell, fileLog, dialogs, AppPaths.SettingsFile),
+            new SettingsViewModel(shell, fileLog, dialogs, AppPaths.SettingsFile, themes),
             new OperationListViewModel(queue));
     }
 

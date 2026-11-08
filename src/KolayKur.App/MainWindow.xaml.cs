@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel;
-using System.Windows;
 using KolayKur.Core.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace KolayKur.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : FluentWindow
 {
     private readonly ShellViewModel shell;
 

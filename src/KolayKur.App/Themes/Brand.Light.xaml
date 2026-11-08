@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Açık tema belirteçleri. Sayfalar renk yazmaz; bu anahtarlar DynamicResource ile kullanılır. Açık ve koyu sözlükte anahtarlar aynıdır. -->
+    <SolidColorBrush x:Key="BrandAccentBrush" Color="#0E7C7B" />
+    <SolidColorBrush x:Key="BrandAccentForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F3F3F3" />
+    <!-- Mica yokken FluentWindow'un düz zemini de pencere zemini olsun. -->
+    <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="PageBackgroundBrush" Color="#F9F9F9" />
+    <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardStrokeBrush" Color="#E5E5E5" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C5C5C" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#0F7B0F" />
+    <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="#E3F3E3" />
+    <SolidColorBrush x:Key="CautionBrush" Color="#9D5D00" />
+
+    <!-- Harf avatarı paleti (beyaz harfle en az 4.5:1); iki temada aynı. -->
+    <SolidColorBrush x:Key="AvatarBrush0" Color="#1F5FA8" />
+    <SolidColorBrush x:Key="AvatarBrush1" Color="#B33A1A" />
+    <SolidColorBrush x:Key="AvatarBrush2" Color="#4752C4" />
+    <SolidColorBrush x:Key="AvatarBrush3" Color="#0E7C7B" />
+    <SolidColorBrush x:Key="AvatarBrush4" Color="#B42318" />
+    <SolidColorBrush x:Key="AvatarBrush5" Color="#6F42C1" />
+    <SolidColorBrush x:Key="AvatarBrush6" Color="#3C873A" />
+    <SolidColorBrush x:Key="AvatarBrush7" Color="#5B5B66" />
+</ResourceDictionary>

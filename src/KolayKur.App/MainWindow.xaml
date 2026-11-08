@@ -1,13 +1,19 @@
-﻿<Window x:Class="KolayKur.App.MainWindow"
+﻿<ui:FluentWindow x:Class="KolayKur.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:KolayKur.Core.Localization;assembly=KolayKur.Core"
         xmlns:vm="clr-namespace:KolayKur.Core.ViewModels;assembly=KolayKur.Core"
         xmlns:views="clr-namespace:KolayKur.App.Views"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:conv="clr-namespace:KolayKur.App.Converters"
         Title="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}"
-        Width="1000" Height="680" MinWidth="720" MinHeight="480"
+        Width="1100" Height="720" MinWidth="760" MinHeight="520"
+        ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
         WindowStartupLocation="CenterScreen">
-    <Window.Resources>
+    <ui:FluentWindow.Resources>
+        <conv:EnumEqualsConverter x:Key="EnumEquals" />
+
         <!-- Sayfa içeriği winget denetimi sürerken gösterilmez: onarım ekranı diğer sayfalardan önce gelir. -->
         <Style x:Key="SearchHostStyle" TargetType="Grid">
             <Setter Property="Visibility" Value="Collapsed" />
@@ -69,71 +75,106 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <Style x:Key="MenuItemStyle" TargetType="ListBoxItem">
-            <Setter Property="Padding" Value="16,12" />
-            <Setter Property="FontSize" Value="15" />
-        </Style>
-    </Window.Resources>
+    </ui:FluentWindow.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0">
+        <!-- Başlık çubuğu: solda logo ve ad (Header). Sağ tarafa (İşlemler düğmesi, Görev 3) TrailingContent konur; pencere düğmeleri en sağda kalır. -->
+        <ui:TitleBar Grid.Row="0" ShowMaximize="True" ShowMinimize="True">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <Image Width="18" Height="18" Source="{StaticResource LogoImage}"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="12"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               Text="{Binding [App_Title], Source={x:Static loc:Loc.Instance}}" />
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
+
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="80" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <ListBox Grid.Column="0" BorderThickness="0,0,1,0"
-                     IsEnabled="{Binding IsMenuEnabled}"
-                     SelectedValuePath="Tag"
-                     SelectedValue="{Binding CurrentPage}"
-                     ItemContainerStyle="{StaticResource MenuItemStyle}">
-                <ListBoxItem Tag="{x:Static vm:ShellPage.Search}"
-                             Content="{Binding [Menu_Search], Source={x:Static loc:Loc.Instance}}" />
-                <ListBoxItem Tag="{x:Static vm:ShellPage.Updates}"
-                             Content="{Binding [Menu_Updates], Source={x:Static loc:Loc.Instance}}" />
-                <ListBoxItem Tag="{x:Static vm:ShellPage.Installed}"
-                             Content="{Binding [Menu_Installed], Source={x:Static loc:Loc.Instance}}" />
-                <ListBoxItem Tag="{x:Static vm:ShellPage.Settings}"
-                             Content="{Binding [Menu_Settings], Source={x:Static loc:Loc.Instance}}" />
-            </ListBox>
+            <!-- Sol menü: IsChecked <-> CurrentPage; winget denetimi ve onarım sürerken devre dışı. -->
+            <Grid Grid.Column="0" Margin="8,4,8,8" IsEnabled="{Binding IsMenuEnabled}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <Grid Grid.Column="1" Margin="24">
-                <!-- Sayfa ViewModel'leri MainWindow kurucusunda atanır; kabuğun DataContext'i yalnızca bu sarmalayıcılarda geçerlidir. -->
-                <Grid Style="{StaticResource SearchHostStyle}">
-                    <views:SearchPage x:Name="searchPage" />
-                </Grid>
+                <StackPanel Grid.Row="0">
+                    <RadioButton GroupName="Rail" Style="{StaticResource RailButtonStyle}"
+                                 Tag="{x:Static ui:SymbolRegular.Search24}"
+                                 Content="{Binding [Nav_Search], Source={x:Static loc:Loc.Instance}}"
+                                 IsChecked="{Binding CurrentPage, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter={x:Static vm:ShellPage.Search}}" />
+                    <RadioButton GroupName="Rail" Style="{StaticResource RailButtonStyle}"
+                                 Tag="{x:Static ui:SymbolRegular.ArrowSync24}"
+                                 Content="{Binding [Nav_Updates], Source={x:Static loc:Loc.Instance}}"
+                                 IsChecked="{Binding CurrentPage, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter={x:Static vm:ShellPage.Updates}}" />
+                    <RadioButton GroupName="Rail" Style="{StaticResource RailButtonStyle}"
+                                 Tag="{x:Static ui:SymbolRegular.Apps24}"
+                                 Content="{Binding [Nav_Installed], Source={x:Static loc:Loc.Instance}}"
+                                 IsChecked="{Binding CurrentPage, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter={x:Static vm:ShellPage.Installed}}" />
+                </StackPanel>
 
-                <Grid Style="{StaticResource UpdatesHostStyle}">
-                    <views:UpdatesPage x:Name="updatesPage" />
-                </Grid>
-
-                <Grid Style="{StaticResource InstalledHostStyle}">
-                    <views:InstalledPage x:Name="installedPage" />
-                </Grid>
-
-                <Grid Style="{StaticResource SettingsHostStyle}">
-                    <views:SettingsPage x:Name="settingsPage" />
-                </Grid>
-
-                <Grid Style="{StaticResource RepairHostStyle}">
-                    <views:RepairPage DataContext="{Binding Repair}" />
-                </Grid>
-
-                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"
-                           Text="{Binding [Startup_Checking], Source={x:Static loc:Loc.Instance}}"
-                           Visibility="{Binding IsChecking, Converter={StaticResource BoolToVisibility}}" />
+                <RadioButton Grid.Row="1" GroupName="Rail" Style="{StaticResource RailButtonStyle}"
+                             Tag="{x:Static ui:SymbolRegular.Settings24}"
+                             Content="{Binding [Nav_Settings], Source={x:Static loc:Loc.Instance}}"
+                             IsChecked="{Binding CurrentPage, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter={x:Static vm:ShellPage.Settings}}" />
             </Grid>
+
+            <!-- Sayfa alanı: içerik katmanı, sol üst köşe 8 px yuvarlak, üst ve solda 1 px çizgi. -->
+            <Border Grid.Column="1" Padding="28"
+                    Background="{DynamicResource PageBackgroundBrush}"
+                    BorderBrush="{DynamicResource CardStrokeBrush}"
+                    BorderThickness="1,1,0,0" CornerRadius="8,0,0,0">
+                <Grid>
+                    <!-- Sayfa ViewModel'leri MainWindow kurucusunda atanır; kabuğun DataContext'i yalnızca bu sarmalayıcılarda geçerlidir. -->
+                    <Grid Style="{StaticResource SearchHostStyle}">
+                        <views:SearchPage x:Name="searchPage" />
+                    </Grid>
+
+                    <Grid Style="{StaticResource UpdatesHostStyle}">
+                        <views:UpdatesPage x:Name="updatesPage" />
+                    </Grid>
+
+                    <Grid Style="{StaticResource InstalledHostStyle}">
+                        <views:InstalledPage x:Name="installedPage" />
+                    </Grid>
+
+                    <Grid Style="{StaticResource SettingsHostStyle}">
+                        <views:SettingsPage x:Name="settingsPage" />
+                    </Grid>
+
+                    <Grid Style="{StaticResource RepairHostStyle}">
+                        <views:RepairPage DataContext="{Binding Repair}" />
+                    </Grid>
+
+                    <!-- Winget denetimi sürerken sayfalar gizlidir; ortada ilerleme halkası ve metin. -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Visibility="{Binding IsChecking, Converter={StaticResource BoolToVisibility}}">
+                        <ui:ProgressRing IsIndeterminate="True" Width="48" Height="48" HorizontalAlignment="Center" />
+                        <TextBlock Margin="0,16,0,0" FontSize="16" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Text="{Binding [Startup_Checking], Source={x:Static loc:Loc.Instance}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Grid>
 
-        <!-- Alt alan: işlem listesi. -->
-        <Border Grid.Row="1" Height="150" BorderBrush="LightGray" BorderThickness="0,1,0,0" Padding="16,10">
+        <!-- Alt alan: işlem listesi (Görev 3'te sağ panelle değişir). -->
+        <Border Grid.Row="2" Height="150" Padding="16,10"
+                Background="{DynamicResource PageBackgroundBrush}"
+                BorderBrush="{DynamicResource CardStrokeBrush}" BorderThickness="0,1,0,0">
             <views:OperationListView x:Name="operationList" />
         </Border>
     </Grid>
-</Window>
+</ui:FluentWindow>

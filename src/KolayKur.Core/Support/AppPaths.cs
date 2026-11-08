@@ -2,12 +2,27 @@ namespace KolayKur.Core.Support;
 
 public static class AppPaths
 {
-    public static string Root { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KolayKur");
+    /// <summary>Veri klasörünü değiştiren ortam değişkeni (ekran görüntüsü betiği ve testler için). Yalnızca mutlak yol kabul edilir.</summary>
+    public const string DataDirVariable = "KOLAYKUR_DATA_DIR";
 
-    public static string Logs { get; } = Path.Combine(Root, "logs");
+    // Her erişimde okunur: testler değişkeni çalışma sırasında değiştirir.
+    public static string Root
+    {
+        get
+        {
+            var overridden = Environment.GetEnvironmentVariable(DataDirVariable);
+            if (!string.IsNullOrWhiteSpace(overridden) && Path.IsPathRooted(overridden) && Path.IsPathFullyQualified(overridden))
+            {
+                return overridden;
+            }
 
-    public static string Downloads { get; } = Path.Combine(Root, "downloads");
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KolayKur");
+        }
+    }
 
-    public static string SettingsFile { get; } = Path.Combine(Root, "settings.json");
+    public static string Logs => Path.Combine(Root, "logs");
+
+    public static string Downloads => Path.Combine(Root, "downloads");
+
+    public static string SettingsFile => Path.Combine(Root, "settings.json");
 }

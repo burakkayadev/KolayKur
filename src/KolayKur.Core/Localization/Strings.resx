@@ -27,6 +27,18 @@
   <data name="Menu_Settings" xml:space="preserve">
     <value>Ayarlar</value>
   </data>
+  <data name="Nav_Search" xml:space="preserve">
+    <value>Ara</value>
+  </data>
+  <data name="Nav_Updates" xml:space="preserve">
+    <value>Güncelle</value>
+  </data>
+  <data name="Nav_Installed" xml:space="preserve">
+    <value>Yüklü</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
   <data name="OperationList_Title" xml:space="preserve">
     <value>İşlem listesi</value>
   </data>
