@@ -102,7 +102,9 @@ public sealed class WpfUiThemeService : IThemeService
 
         var dark = theme == ApplicationTheme.Dark;
         SwapBrandDictionary(application.Resources.MergedDictionaries, dark);
-        ApplicationAccentColorManager.Apply(dark ? DarkAccent : LightAccent, dark ? ApplicationTheme.Dark : ApplicationTheme.Light);
+        // Her WPF-UI vurgu yuvası tam marka rengi olsun (türetilmiş açık/koyu ton kullanılmaz).
+        var accent = dark ? DarkAccent : LightAccent;
+        ApplicationAccentColorManager.Apply(accent, accent, accent, accent);
     }
 
     private static void SwapBrandDictionary(System.Collections.ObjectModel.Collection<ResourceDictionary> dictionaries, bool dark)
