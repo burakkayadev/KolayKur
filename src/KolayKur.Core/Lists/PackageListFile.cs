@@ -25,6 +25,18 @@ public static class PackageListFile
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
+    // Yerel katalog (GetInstalledAsync) winget kaynağı olmayan kayıtları da listeler. Bunların kimliği Add/Remove Programs
+    // ("ARP\Machine\X64\...") veya kaynaksız MSIX ("MSIX\Ad_Sürüm_mimari__yayıncı") biçimindedir; `winget export` bunları yazmaz.
+    private static readonly string[] SourcelessIdPrefixes = [@"ARP\", @"MSIX\"];
+
+    /// <summary>
+    /// Kimlik <c>winget export</c> dosyasına yazılabilir mi? Winget kaynağı olmayan (ARP\ ve MSIX\ ile başlayan) ve boş
+    /// kimlikler yazılmaz; <see cref="Save"/> kendisine verileni olduğu gibi yazar, süzmeyi çağıran yapar.
+    /// </summary>
+    public static bool IsExportable(string id) =>
+        !string.IsNullOrWhiteSpace(id)
+        && !Array.Exists(SourcelessIdPrefixes, prefix => id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
     /// <summary>
     /// Kimlikleri tek kaynaklı (winget) bir liste olarak yazar. Önce geçici dosyaya yazıp asıl dosyanın yerine koyar,
     /// yarım dosya kalmaz. G/Ç hataları (<see cref="IOException"/> vb.) çağırana yansır.

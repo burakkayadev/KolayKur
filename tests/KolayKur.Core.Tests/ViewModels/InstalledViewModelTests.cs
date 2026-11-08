@@ -163,6 +163,73 @@ public sealed class InstalledViewModelTests : QueueTestBase
     }
 
     [Fact]
+    public async Task Export_skips_entries_without_a_winget_source()
+    {
+        // Arrange: yerel katalog winget kaynağı olmayan kayıtları da (ARP\, MSIX\) listeler; winget export bunları yazmaz.
+        client.Installed =
+        [
+            Pkg("Git.Git"),
+            Pkg(@"ARP\Machine\X64\Foo"),
+            Pkg(@"MSIX\Bar_1.0_x64__abc"),
+            Pkg("7zip.7zip"),
+        ];
+        var path = TempFile("liste.json");
+        dialogs.SaveFilePath = path;
+        var (viewModel, _) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.Equal(4, viewModel.Packages.Count);
+
+        // Act
+        viewModel.ExportCommand.Execute(null);
+
+        // Assert: dosya içeriğinde yalnızca winget kimlikleri var.
+        var content = File.ReadAllText(path);
+        Assert.Equal(["Git.Git", "7zip.7zip"], PackageListFile.Load(path));
+        Assert.DoesNotContain("ARP", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("MSIX", content, StringComparison.Ordinal);
+        Assert.Null(viewModel.ErrorKey);
+    }
+
+    [Fact]
+    public async Task Export_of_only_non_exportable_entries_writes_an_empty_valid_list()
+    {
+        // Arrange
+        client.Installed = [Pkg(@"ARP\Machine\X64\Foo"), Pkg(@"MSIX\Bar_1.0_x64__abc")];
+        var path = TempFile("liste.json");
+        dialogs.SaveFilePath = path;
+        var (viewModel, queue) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        // Act
+        viewModel.ExportCommand.Execute(null);
+
+        // Assert: geçerli dosya, boş paket listesi; Load boş liste döndürür (kural: boş Packages geçerlidir).
+        Assert.Empty(PackageListFile.Load(path));
+        Assert.Null(viewModel.ErrorKey);
+        Assert.Empty(queue.Items);
+    }
+
+    [Fact]
+    public async Task Exported_list_imports_without_unavailable_entries()
+    {
+        // Arrange: kendi dışa aktarımımız kendi "Listeden kur" düğmemizle gidiş-dönüşte NotFound işi üretmez.
+        client.Installed = [Pkg("Git.Git"), Pkg(@"ARP\Machine\X64\Foo"), Pkg(@"MSIX\Bar_1.0_x64__abc")];
+        var path = TempFile("liste.json");
+        dialogs.SaveFilePath = path;
+        dialogs.OpenFilePath = path;
+        var (viewModel, queue) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        viewModel.ExportCommand.Execute(null);
+
+        // Act
+        viewModel.ImportCommand.Execute(null);
+        await queue.WhenIdleAsync().WaitAsync(Timeout);
+
+        // Assert
+        Assert.Equal(["Git.Git"], queue.Items.Select(item => item.Package.Id));
+    }
+
+    [Fact]
     public async Task Export_cancelled_does_nothing()
     {
         // Arrange: dosya seçici iptal edildi (null).

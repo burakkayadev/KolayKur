@@ -110,7 +110,10 @@ public sealed partial class InstalledViewModel : ObservableObject
         }
     }
 
-    /// <summary>Yüklü uygulamaların kimliklerini seçilen dosyaya yazar; seçici iptal edilirse bir şey yapmaz.</summary>
+    /// <summary>
+    /// Yüklü uygulamaların kimliklerini seçilen dosyaya yazar; winget kaynağı olmayan kayıtlar (ARP\, MSIX\) yazılmaz,
+    /// böylece dosya "Listeden kur" ile geri okununca bulunamayan işler üretmez. Seçici iptal edilirse bir şey yapmaz.
+    /// </summary>
     [RelayCommand]
     private void Export()
     {
@@ -123,7 +126,7 @@ public sealed partial class InstalledViewModel : ObservableObject
         ErrorKey = null;
         try
         {
-            PackageListFile.Save(path, Packages.ToList(), wingetVersion());
+            PackageListFile.Save(path, Packages.Where(package => PackageListFile.IsExportable(package.Id)), wingetVersion());
         }
         catch (Exception ex)
         {

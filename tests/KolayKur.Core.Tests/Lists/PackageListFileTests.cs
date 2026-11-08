@@ -115,4 +115,41 @@ public sealed class PackageListFileTests : IDisposable
         Assert.Equal(["Çay.Şeker"], PackageListFile.Load(path));
         Assert.Equal([path], Directory.GetFiles(directory));
     }
+
+    [Theory]
+    [InlineData("Git.Git", true)]
+    [InlineData("7zip.7zip", true)]
+    [InlineData("Microsoft.WindowsTerminal", true)]
+    [InlineData(@"ARP\Machine\X64\Foo", false)]
+    [InlineData(@"ARP\User\X86\Foo 1.0", false)]
+    [InlineData(@"arp\machine\x64\foo", false)]
+    [InlineData(@"MSIX\Bar_1.0_x64__abc", false)]
+    [InlineData(@"msix\bar_1.0_x64__abc", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    public void IsExportable_excludes_ids_without_a_winget_source(string id, bool expected)
+    {
+        Assert.Equal(expected, PackageListFile.IsExportable(id));
+    }
+
+    [Theory]
+    [InlineData("ARPA.Tool")]
+    [InlineData("MSIXHero.MSIXHero")]
+    public void IsExportable_keeps_real_ids_that_merely_start_with_the_same_letters(string id)
+    {
+        Assert.True(PackageListFile.IsExportable(id));
+    }
+
+    [Fact]
+    public void Save_of_an_empty_list_writes_a_valid_file_that_loads_as_empty()
+    {
+        var path = Path.Combine(directory, "liste.json");
+
+        PackageListFile.Save(path, [], "1.29.380");
+
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var source = document.RootElement.GetProperty("Sources").EnumerateArray().Single();
+        Assert.Empty(source.GetProperty("Packages").EnumerateArray());
+        Assert.Empty(PackageListFile.Load(path));
+    }
 }
