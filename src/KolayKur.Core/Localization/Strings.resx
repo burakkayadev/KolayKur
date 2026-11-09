@@ -67,7 +67,7 @@
     <value>Devam eden işlemler var. Şimdi kapatırsanız yarım kalabilirler. Yine de kapatmak istiyor musunuz?</value>
   </data>
   <data name="License_Notice" xml:space="preserve">
-    <value>"Kur" düğmesine basmak, o uygulamanın lisansını kabul etmek anlamına gelir. Microsoft Store'dan kurmak, Microsoft Store kullanım koşullarını kabul etmek anlamına gelir. Program bunu yalnızca ilk açılışta hatırlatır.</value>
+    <value>"Kur" düğmesine basmak, o uygulamanın lisansını kabul etmek anlamına gelir. KolayKur arama ve kurulum için Microsoft Store'u da kullanır ve Microsoft Store kullanım koşullarını sizin adınıza kabul eder. Bu not, koşullar değiştiğinde yeniden gösterilir.</value>
   </data>
   <data name="Repair_Title" xml:space="preserve">
     <value>Winget onarımı gerekiyor</value>

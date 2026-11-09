@@ -67,7 +67,7 @@
     <value>Operations are still running. If you close now they may be left unfinished. Do you want to close anyway?</value>
   </data>
   <data name="License_Notice" xml:space="preserve">
-    <value>Pressing "Install" means you accept that app's license. Installing from the Microsoft Store means accepting the Microsoft Store terms. The program reminds you of this only on the first launch.</value>
+    <value>Pressing "Install" means you accept that app's license. KolayKur also uses the Microsoft Store for searching and installing, and accepts the Microsoft Store terms on your behalf. This notice is shown again when the terms change.</value>
   </data>
   <data name="Repair_Title" xml:space="preserve">
     <value>Winget needs to be repaired</value>

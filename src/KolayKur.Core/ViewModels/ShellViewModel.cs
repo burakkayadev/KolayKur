@@ -64,9 +64,10 @@ public sealed partial class ShellViewModel(
         var settings = AppSettings.Load(settingsPath);
         Loc.Instance.SetLanguage(settings.Language);
 
-        await DiagnoseAsync(ct);
-
+        // Bildirim winget denetiminden önce gösterilir: Store'a hiçbir bağlantı bildirimden önce kurulmaz.
         ShowLicenseNoticeOnce(settings);
+
+        await DiagnoseAsync(ct);
     }
 
     /// <summary>

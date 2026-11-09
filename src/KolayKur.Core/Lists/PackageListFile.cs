@@ -49,7 +49,7 @@ public static class PackageListFile
     public static bool IsExportable(PackageInfo package)
     {
         ArgumentNullException.ThrowIfNull(package);
-        return package.Source is PackageSources.Winget or PackageSources.MicrosoftStore
+        return IsKnownSource(package.Source)
             && !string.IsNullOrWhiteSpace(package.Id)
             && !Array.Exists(SourcelessIdPrefixes, prefix => package.Id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
@@ -67,7 +67,7 @@ public static class PackageListFile
         var sources = new List<ExportSource>();
         foreach (var details in new[] { WingetSource, StoreSource })
         {
-            if (exportable.Any(package => package.Source == details.Name))
+            if (exportable.Any(package => SourceIs(package, details.Name)))
             {
                 sources.Add(SourceOf(details, exportable));
             }
@@ -129,12 +129,19 @@ public static class PackageListFile
         }
     }
 
+    private static bool SourceIs(PackageInfo package, string name) =>
+        string.Equals(package.Source, name, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsKnownSource(string? source) =>
+        string.Equals(source, PackageSources.Winget, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(source, PackageSources.MicrosoftStore, StringComparison.OrdinalIgnoreCase);
+
     private static ExportSource SourceOf(SourceDetailsData details, List<PackageInfo> exportable) => new()
     {
         Packages =
         [
             .. exportable
-                .Where(package => package.Source == details.Name)
+                .Where(package => SourceIs(package, details.Name))
                 .Select(package => new ExportPackage { PackageIdentifier = package.Id }),
         ],
         SourceDetails = details,

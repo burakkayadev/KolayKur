@@ -179,6 +179,30 @@ public sealed class ShellViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task License_notice_is_shown_before_winget_becomes_healthy()
+    {
+        var events = new List<string>();
+        dialogs.OnInform = _ => events.Add("notice");
+        var shell = CreateShell(new FakeSystemProbe());
+        shell.BecameHealthy += (_, _) => events.Add("healthy");
+
+        await shell.StartAsync(CancellationToken.None);
+
+        Assert.Equal(["notice", "healthy"], events);
+    }
+
+    [Fact]
+    public async Task License_notice_is_shown_even_when_the_winget_check_fails()
+    {
+        var failing = new ControllableSystemProbe { Failure = new InvalidOperationException("AppX bozuk") };
+        var shell = CreateShell(failing);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => shell.StartAsync(CancellationToken.None));
+
+        Assert.Single(dialogs.Informed);
+    }
+
+    [Fact]
     public async Task License_notice_shows_for_new_users()
     {
         await CreateShell(new FakeSystemProbe()).StartAsync(CancellationToken.None);

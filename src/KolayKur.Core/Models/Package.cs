@@ -1,3 +1,5 @@
+using KolayKur.Core.Localization;
+
 namespace KolayKur.Core.Models;
 
 /// <summary>
@@ -5,7 +7,14 @@ namespace KolayKur.Core.Models;
 /// <see cref="Source"/> paketin geldiği katalogun adıdır (<see cref="PackageSources"/>); bilinmiyorsa <c>null</c>.
 /// </summary>
 public sealed record PackageInfo(
-    string Id, string Name, string Publisher, string? InstalledVersion, string? AvailableVersion, string? Source = null);
+    string Id, string Name, string Publisher, string? InstalledVersion, string? AvailableVersion, string? Source = null)
+{
+    /// <summary>Ekran okuyucu için ad; Microsoft Store paketlerinde aynı adlı iki kartı ayırt etmek için kaynak etiketi eklenir.</summary>
+    public string AccessibleLabel =>
+        string.Equals(Source, PackageSources.MicrosoftStore, StringComparison.OrdinalIgnoreCase)
+            ? $"{Name} ({Loc.Instance["Source_MicrosoftStore"]})"
+            : Name;
+}
 
 /// <summary>Paket kaynaklarının (winget katalog adlarının) kararlı adları.</summary>
 public static class PackageSources

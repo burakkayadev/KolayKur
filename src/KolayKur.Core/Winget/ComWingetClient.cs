@@ -291,12 +291,16 @@ public sealed class ComWingetClient(WingetComFactory factory, FileLog? log = nul
             package.Id,
             package.Name,
             available?.Publisher ?? installed?.Publisher ?? "",
-            NullIfEmpty(installed?.Version),
-            NullIfEmpty(available?.Version),
+            VersionOrNull(installed?.Version),
+            VersionOrNull(available?.Version),
             NullIfEmpty(available?.PackageCatalog?.Info?.Name));
     }
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text;
+
+    /// <summary>Boş ya da winget'in "Unknown" sürümü (sürüm bilinmiyor) için <c>null</c>; arayüz sürüm etiketini gizler.</summary>
+    internal static string? VersionOrNull(string? version) =>
+        string.Equals(version?.Trim(), "Unknown", StringComparison.OrdinalIgnoreCase) ? null : NullIfEmpty(version);
 
     private static OperationOutcome NotFound(string packageId) =>
         new(OperationStatus.NotFound, $"{packageId} not found.", OperationReason.NotFound);

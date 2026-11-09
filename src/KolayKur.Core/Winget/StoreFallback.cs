@@ -20,7 +20,7 @@ internal static class StoreFallback
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            log.TryError("Microsoft Store kataloğu kullanılamadı; yalnız winget ile devam ediliyor.", ex);
+            log.TryError("Birleşik katalog bağlantısı başarısız; yalnız winget ile yeniden deneniyor.", ex);
         }
 
         ct.ThrowIfCancellationRequested();

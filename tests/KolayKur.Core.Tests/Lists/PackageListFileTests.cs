@@ -121,6 +121,8 @@ public sealed class PackageListFileTests : IDisposable
     [InlineData("Git.Git", "winget", true)]
     [InlineData("Microsoft.WindowsTerminal", "winget", true)]
     [InlineData("9WZDNCRFJ3TJ", "msstore", true)]
+    [InlineData("9WZDNCRFJ3TJ", "MSSTORE", true)]
+    [InlineData("Git.Git", "WinGet", true)]
     [InlineData("Git.Git", null, false)]
     [InlineData("Git.Git", "other", false)]
     [InlineData(@"ARP\Machine\X64\Foo", "winget", false)]
@@ -133,6 +135,20 @@ public sealed class PackageListFileTests : IDisposable
     public void Unknown_source_is_not_exportable(string id, string? source, bool expected)
     {
         Assert.Equal(expected, PackageListFile.IsExportable(Pkg(id, source)));
+    }
+
+    [Fact]
+    public void Save_groups_sources_ignoring_case()
+    {
+        var path = Path.Combine(directory, "liste.json");
+
+        PackageListFile.Save(path, [Pkg("9WZDNCRFJ3TJ", "MSSTORE"), Pkg("Git.Git", "WinGet")], "v1.0");
+
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var sources = document.RootElement.GetProperty("Sources").EnumerateArray().ToList();
+        Assert.Equal(2, sources.Count);
+        Assert.Equal(["Git.Git"], IdsOf(sources[0]));
+        Assert.Equal(["9WZDNCRFJ3TJ"], IdsOf(sources[1]));
     }
 
     [Theory]

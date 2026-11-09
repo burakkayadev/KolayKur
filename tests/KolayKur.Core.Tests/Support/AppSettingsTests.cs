@@ -68,6 +68,15 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
+    public void Saved_json_has_no_computed_effective_version_key()
+    {
+        new AppSettings("en", LicenseNoticeShown: true, LicenseNoticeVersion: 2).Save(SettingsPath);
+
+        using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(SettingsPath));
+        Assert.False(document.RootElement.TryGetProperty("EffectiveLicenseNoticeVersion", out _));
+    }
+
+    [Fact]
     public void Notice_version_defaults_to_zero_and_round_trips()
     {
         Assert.Equal(0, new AppSettings().LicenseNoticeVersion);

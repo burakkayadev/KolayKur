@@ -63,7 +63,7 @@
                     <ui:Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,12,0,0" Padding="16,4"
                                HorizontalAlignment="Stretch" Appearance="Secondary"
                                Icon="{ui:SymbolIcon Delete16}"
-                               AutomationProperties.HelpText="{Binding Name}"
+                               AutomationProperties.HelpText="{Binding AccessibleLabel}"
                                Command="{Binding DataContext.UninstallCommand, RelativeSource={RelativeSource AncestorType=views:InstalledPage}}"
                                CommandParameter="{Binding}"
                                Content="{Binding [Installed_Uninstall], Source={x:Static loc:Loc.Instance}}" />

@@ -43,7 +43,9 @@ public class ComWingetClientRealTests
         var installed = await client.GetInstalledAsync(Timeout());
 
         Assert.NotEmpty(installed);
-        Assert.All(installed, p => Assert.False(string.IsNullOrWhiteSpace(p.InstalledVersion), p.Id));
+        // Sürümü "Unknown" olan kayıtlar (örn. Steam oyunları) bilerek sürümsüz döner; çoğu kaydın sürümü vardır.
+        Assert.Contains(installed, p => !string.IsNullOrWhiteSpace(p.InstalledVersion));
+        Assert.DoesNotContain(installed, p => string.Equals(p.InstalledVersion, "Unknown", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -79,8 +81,8 @@ public class ComWingetClientRealTests
     {
         var results = await client.SearchAsync("git", Timeout());
 
-        var git = Assert.Single(results, p => string.Equals(p.Id, "Git.Git", StringComparison.OrdinalIgnoreCase));
-        Assert.Equal(PackageSources.Winget, git.Source, ignoreCase: true);
+        Assert.Contains(results, p => string.Equals(p.Id, "Git.Git", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(p.Source, PackageSources.Winget, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

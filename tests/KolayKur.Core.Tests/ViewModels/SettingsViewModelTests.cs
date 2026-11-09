@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using KolayKur.Core.Health;
 using KolayKur.Core.Localization;
 using KolayKur.Core.Queue;

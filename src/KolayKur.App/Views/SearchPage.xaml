@@ -100,7 +100,8 @@
 
                     <CheckBox Grid.Row="0" Grid.Column="2" VerticalAlignment="Top" MinWidth="0" Padding="0"
                               IsChecked="{Binding IsSelected}"
-                              AutomationProperties.Name="{Binding Package.Name}" />
+                              AutomationProperties.Name="{Binding Package.Name}"
+                              AutomationProperties.HelpText="{Binding Package.AccessibleLabel}" />
 
                     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
@@ -118,7 +119,7 @@
                         </Border>
                         <ui:Button Grid.Column="1" Style="{StaticResource InstallButtonStyle}"
                                    Appearance="Primary" Padding="20,4"
-                                   AutomationProperties.HelpText="{Binding Package.Name}"
+                                   AutomationProperties.HelpText="{Binding Package.AccessibleLabel}"
                                    Command="{Binding DataContext.InstallCommand, RelativeSource={RelativeSource AncestorType=views:SearchPage}}"
                                    CommandParameter="{Binding Package}"
                                    Content="{Binding [Search_Install], Source={x:Static loc:Loc.Instance}}" />
