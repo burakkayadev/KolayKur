@@ -81,7 +81,7 @@ Tek dosya yayını:
 dotnet publish src/KolayKur.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o out/release
 ```
 
-Sonuç `out/release/KolayKur.exe` dosyasıdır; dağıtılacak tek dosya budur (klasördeki `.pdb` dosyaları hata ayıklama içindir). Sıkıştırma (`EnableCompressionInSingleFile`) uygulama projesinde açıktır: dosya yaklaşık 71 MB olur (ölçülen: 74.473.764 bayt). Sıkıştırmasız üretmek isterseniz komuta `-p:EnableCompressionInSingleFile=false` ekleyin.
+Sonuç `out/release/KolayKur.exe` dosyasıdır; dağıtılacak tek dosya budur (klasördeki `.pdb` dosyaları hata ayıklama içindir). Sıkıştırma (`EnableCompressionInSingleFile`) uygulama projesinde açıktır: dosya yaklaşık 71 MB olur (ölçülen: 74.478.649 bayt). Sıkıştırmasız üretmek isterseniz komuta `-p:EnableCompressionInSingleFile=false` ekleyin.
 
 Testler:
 
@@ -125,7 +125,7 @@ KolayKur is a small Windows program that lets you use winget (the Windows packag
 
 **Status:** install, update, uninstall, the UAC "No" path, the English UI and export were tried with the real winget on the owner's PC and worked (8 November 2026); the missing-winget case was verified in Windows Sandbox. 425 automated tests (with a fake winget) pass. Batch install and install-from-list are covered by automated tests only. Not yet tested: real installs from the Microsoft Store, repairing an installed-but-broken winget on a real machine, Windows 10, and downloads by friends through GitHub Releases (SmartScreen).
 
-**Build:** see the `dotnet publish` command above (about 71 MB output, measured 74,473,764 bytes). Run tests with `dotnet test --filter "Category!=Real"`. Tests marked `Real` use the real winget; the one that installs and uninstalls software only runs when `KOLAYKUR_REAL_INSTALL=1` is set.
+**Build:** see the `dotnet publish` command above (about 71 MB output, measured 74,478,649 bytes). Run tests with `dotnet test --filter "Category!=Real"`. Tests marked `Real` use the real winget; the one that installs and uninstalls software only runs when `KOLAYKUR_REAL_INSTALL=1` is set.
 
 **License:** [MIT](LICENSE); third-party components are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Pressing "Install" (Kur) means you accept that app's license. KolayKur also uses the Microsoft Store for searching and installing, and accepts the Microsoft Store terms on your behalf. The program shows this notice at first use and again when the terms change.
 
