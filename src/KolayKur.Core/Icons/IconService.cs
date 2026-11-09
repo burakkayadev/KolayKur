@@ -33,7 +33,7 @@ public sealed class IconService(
             ct.ThrowIfCancellationRequested();
 
             // Önbellek denetimi dosya sistemine dokunur: çağıran arayüz iş parçacığındaysa onu bekletmemek için havuzda yapılır.
-            var (cached, negative) = await Task.Run(() => (cache.TryGet(package.Id), cache.IsNegative(package.Id)), ct).ConfigureAwait(false);
+            var (cached, negative) = await Task.Run(() => (cache.TryGet(package.Id), cache.IsNegative(package.Id, package.InstalledVersion is not null)), ct).ConfigureAwait(false);
             if (cached is not null || negative)
             {
                 return cached;
@@ -59,6 +59,9 @@ public sealed class IconService(
             return null;
         }
     }
+
+    /// <summary>Gösterilemeyen (örn. bozuk çıkan) önbellek dosyasını siler; sonraki istek simgeyi yeniden bulur.</summary>
+    public void ReportBroken(string path) => cache.Invalidate(path);
 
     private Job Join(PackageInfo package)
     {
@@ -93,7 +96,9 @@ public sealed class IconService(
 
             if (!job.Task.IsCompleted)
             {
-                job.Cts.Cancel();
+                // İptal geri çağrıları (COM IAsyncInfo.Cancel dahil) çağıranın (arayüz) iş parçacığında çalışmasın.
+                var cts = job.Cts;
+                _ = Task.Run(cts.Cancel);
             }
         }
     }
@@ -104,8 +109,9 @@ public sealed class IconService(
         try
         {
             var hints = await ReadHintsAsync(package, ct).ConfigureAwait(false);
-            if (hints is null)
+            if (hints is null || hints.Incomplete)
             {
+                // COM hatası ya da eksik (Store'a ulaşılamadı) sonuç geçicidir: "simge yok" saklanmaz.
                 transientFailure = true;
                 return null;
             }
@@ -140,7 +146,7 @@ public sealed class IconService(
         {
             if (!transientFailure && !ct.IsCancellationRequested && cache.TryGet(package.Id) is null)
             {
-                cache.PutNegative(package.Id);
+                cache.PutNegative(package.Id, package.InstalledVersion is not null);
             }
         }
     }

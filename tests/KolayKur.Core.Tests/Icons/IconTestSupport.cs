@@ -44,11 +44,10 @@ public static class TestPng
 
     private static void Chunk(Stream s, string type, byte[] data)
     {
+        var body = System.Text.Encoding.ASCII.GetBytes(type).Concat(data).ToArray();
         s.Write(BigEndian(data.Length));
-        s.Write(System.Text.Encoding.ASCII.GetBytes(type));
-        s.Write(data);
-        // Sahte özet: IEND için gerçek değer (önbellek uç parçası denetimi), diğerleri için sıfır.
-        s.Write(type == "IEND" ? [0xAE, 0x42, 0x60, 0x82] : [0, 0, 0, 0]);
+        s.Write(body);
+        s.Write(BigEndian((int)PngIntegrity.Crc32(body)));
     }
 }
 
@@ -76,6 +75,10 @@ public sealed class FakeFetcher : IIconFetcher
 
     public int MaxConcurrent => Volatile.Read(ref maxRunning);
 
+    public int Cancelled => Volatile.Read(ref cancelled);
+
+    private int cancelled;
+
     public async Task<byte[]?> FetchAsync(Uri url, CancellationToken ct)
     {
         requests.Enqueue(url);
@@ -89,7 +92,15 @@ public sealed class FakeFetcher : IIconFetcher
         {
             if (Gate is not null)
             {
-                await Gate.Task.WaitAsync(ct);
+                try
+                {
+                    await Gate.Task.WaitAsync(ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    Interlocked.Increment(ref cancelled);
+                    throw;
+                }
             }
 
             return Failure is not null ? throw Failure : Responses.GetValueOrDefault(url.AbsoluteUri);

@@ -132,12 +132,40 @@ public sealed partial class WindowsInstalledIconReader : IInstalledIconReader
             }
         }
 
-        return Path.IsPathFullyQualified(path) ? (path, index) : null;
+        return Path.IsPathFullyQualified(path) && !IsNetworkPath(path) ? (path, index) : null;
+    }
+
+    /// <summary>UNC (<c>\sunucupaylaşım</c>) ve cihaz (<c>\?</c>) yolları ağa çıkabilir; yerel dosya dışında bir şey okunmaz.</summary>
+    internal static bool IsNetworkPath(string path) => path.StartsWith(@"\\", StringComparison.Ordinal) || path.StartsWith("//", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Birden çok programın paylaştığı klasörler (sürücü kökü, Windows, System32, Program Files'ın kendisi, ortak dosyalar, ProgramData):
+    /// buradaki "en büyük exe" uygulamanın değildir, simge olarak alınmaz.
+    /// </summary>
+    internal static bool IsSharedFolder(string folder)
+    {
+        var full = Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (Path.GetPathRoot(full)?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Equals(full, StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return true;
+        }
+
+        var shared = new[]
+        {
+            Environment.SpecialFolder.Windows, Environment.SpecialFolder.System, Environment.SpecialFolder.SystemX86,
+            Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolder.ProgramFilesX86,
+            Environment.SpecialFolder.CommonProgramFiles, Environment.SpecialFolder.CommonProgramFilesX86,
+            Environment.SpecialFolder.CommonApplicationData, Environment.SpecialFolder.UserProfile, Environment.SpecialFolder.LocalApplicationData,
+            Environment.SpecialFolder.ApplicationData, Environment.SpecialFolder.Desktop,
+        };
+        return shared.Select(Environment.GetFolderPath)
+            .Where(p => p.Length > 0)
+            .Any(p => string.Equals(Path.GetFullPath(p).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), full, StringComparison.OrdinalIgnoreCase));
     }
 
     private static byte[]? ReadFromFolder(string folder)
     {
-        if (!Directory.Exists(folder))
+        if (IsNetworkPath(folder) || !Path.IsPathFullyQualified(folder) || IsSharedFolder(folder) || !Directory.Exists(folder))
         {
             return null;
         }

@@ -22,7 +22,7 @@ KolayKur, Windows'un paket yöneticisi winget'i ve Microsoft Store'u terminal a�
 - **Yazılabilir klasör:** program ilk açılışta çalışması için gereken küçük bir dosyayı (`Microsoft.Management.Deployment.winmd`, yaklaşık 64 KB) `KolayKur.exe`'nin yanına çıkarır. Klasör yazılamıyorsa program bunu söyler; exe'yi başka bir klasöre taşımanız yeterlidir.
 - **Winget onarımı:** winget yoksa veya bozuksa program bunu algılar ve kurmayı ya da onarmayı önerir (Ayarlar sayfasındaki "Onar" düğmesiyle de açılır).
 - **İzinler:** program normal kullanıcı olarak çalışır. Bir uygulamanın kurulumu yönetici izni isterse Windows'un kendi izin penceresi (UAC) çıkar; "Hayır" derseniz yalnızca o iş iptal olur, sıradaki işler devam eder.
-- **Gizlilik (simgeler):** KolayKur simgeleri Microsoft Store'dan ve uygulamaların kendi sitelerinden indirir; bu siteler bağlantıyı görür. Hiçbir aracı servis kullanılmaz. Simgeler `%LocalAppData%KolayKuricons` klasöründe saklanır (en çok 50 MB). Simge bulunamazsa ya da internet yoksa kartta uygulamanın ilk harfi görünür.
+- **Gizlilik (simgeler):** KolayKur uygulama simgelerini winget kataloğunda verilen adreslerden ve uygulamanın ya da yayıncının kendi sitesinden indirir; bu siteler bağlantınızı görür. Hiçbir aracı servis kullanılmaz. Simgeler `%LocalAppData%\KolayKur\icons` klasöründe saklanır (en çok 50 MB). Simge bulunamazsa ya da internet yoksa kartta uygulamanın ilk harfi görünür.
 
 ## Özellikler
 
@@ -56,7 +56,7 @@ Dürüst durum notu:
 
 | Konu | Durum |
 | --- | --- |
-| Otomatik testler (sahte winget ile) | Geçiyor (340 test) |
+| Otomatik testler (sahte winget ile) | Geçiyor (425 test) |
 | Yeni görünüm (açık/koyu tema, yeni ikon) | Otomatik testler ve ekran görüntüleriyle kapsandı; proje sahibinin son elle kontrolü bekliyor |
 | Tek `KolayKur.exe`'nin boş bir klasörde tek başına açılması | Denendi |
 | Programın ürettiği liste dosyasının `winget import` ile okunması | Denendi (biçim hatası yok) |
@@ -119,11 +119,11 @@ KolayKur is a small Windows program that lets you use winget (the Windows packag
 
 **Administrator rights:** the program runs as a normal user. If an installer needs admin rights, Windows shows its own UAC prompt; answering "No" cancels only that job and the queue continues.
 
-**Privacy (icons):** KolayKur downloads app icons from the Microsoft Store and from the apps' own websites; those sites see the connection. No third-party icon service is used. Icons are cached in `%LocalAppData%KolayKuricons` (50 MB at most). If no icon is found, or you are offline, the card shows the app's first letter.
+**Privacy (icons):** KolayKur downloads app icons from the addresses given in the winget catalog and from the app's or publisher's own website; those sites see your connection. No third-party icon service is used. Icons are stored in `%LocalAppData%\KolayKur\icons` (50 MB at most). If no icon is found, or you are offline, the card shows the app's first letter.
 
 **Files:** settings and logs are in `%LocalAppData%\KolayKur`; app icons are cached in `%LocalAppData%\KolayKur\icons`; files downloaded during a winget repair go to `%LocalAppData%\KolayKur\downloads` and are deleted after a successful repair. The program also leaves the `Microsoft.Management.Deployment.winmd` file next to `KolayKur.exe` and the .NET single-file extraction folder `%TEMP%\.net\KolayKur` (safe to delete).
 
-**Status:** install, update, uninstall, the UAC "No" path, the English UI and export were tried with the real winget on the owner's PC and worked (8 November 2026); the missing-winget case was verified in Windows Sandbox. 340 automated tests (with a fake winget) pass. Batch install and install-from-list are covered by automated tests only. Not yet tested: real installs from the Microsoft Store, repairing an installed-but-broken winget on a real machine, Windows 10, and downloads by friends through GitHub Releases (SmartScreen).
+**Status:** install, update, uninstall, the UAC "No" path, the English UI and export were tried with the real winget on the owner's PC and worked (8 November 2026); the missing-winget case was verified in Windows Sandbox. 425 automated tests (with a fake winget) pass. Batch install and install-from-list are covered by automated tests only. Not yet tested: real installs from the Microsoft Store, repairing an installed-but-broken winget on a real machine, Windows 10, and downloads by friends through GitHub Releases (SmartScreen).
 
 **Build:** see the `dotnet publish` command above (about 71 MB output, measured 74,473,764 bytes). Run tests with `dotnet test --filter "Category!=Real"`. Tests marked `Real` use the real winget; the one that installs and uninstalls software only runs when `KOLAYKUR_REAL_INSTALL=1` is set.
 

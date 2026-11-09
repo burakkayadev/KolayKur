@@ -27,7 +27,14 @@ public partial class PackageAvatarView : UserControl
         nameof(PackageSource), typeof(string), typeof(PackageAvatarView),
         new PropertyMetadata(null, (d, _) => ((PackageAvatarView)d).Refresh()));
 
+    public static readonly DependencyProperty PackageIsInstalledProperty = DependencyProperty.Register(
+        nameof(PackageIsInstalled), typeof(bool), typeof(PackageAvatarView),
+        new PropertyMetadata(false, (d, _) => ((PackageAvatarView)d).Refresh()));
+
     private CancellationTokenSource? loadCts;
+    // IconService yalnızca "kurulu mu" bilgisini kullanır; sürüm metni anlamsızdır.
+    private const string InstalledMarker = "installed";
+
     private bool loadQueued;
     private string iconFor = string.Empty;
 
@@ -57,6 +64,13 @@ public partial class PackageAvatarView : UserControl
     {
         get => (string?)GetValue(PackageSourceProperty);
         set => SetValue(PackageSourceProperty, value);
+    }
+
+    /// <summary>Paket kurulu mu: "simge yok" kaydı kurulu ve kurulu olmayan hâl için ayrı tutulur.</summary>
+    public bool PackageIsInstalled
+    {
+        get => (bool)GetValue(PackageIsInstalledProperty);
+        set => SetValue(PackageIsInstalledProperty, value);
     }
 
     private void Refresh()
@@ -118,7 +132,7 @@ public partial class PackageAvatarView : UserControl
         var token = cts.Token;
         try
         {
-            var package = new PackageInfo(id, PackageName ?? string.Empty, string.Empty, null, null, PackageSource);
+            var package = new PackageInfo(id, PackageName ?? string.Empty, string.Empty, PackageIsInstalled ? InstalledMarker : null, null, PackageSource);
             var path = await service.GetIconPathAsync(package, token);
             if (path is null || token.IsCancellationRequested)
             {
@@ -127,7 +141,14 @@ public partial class PackageAvatarView : UserControl
 
             // Dosya okuması ve çözme arka planda; donmuş görüntü arayüz iş parçacığına geçer.
             var image = await Task.Run(() => LoadFrozen(path), token);
-            if (image is not null && !token.IsCancellationRequested)
+            if (image is null)
+            {
+                // Başlığı geçerli ama gövdesi bozuk dosya: harf kalır, dosya silinir ve sonraki istekte yeniden bulunur.
+                service.ReportBroken(path);
+                return;
+            }
+
+            if (!token.IsCancellationRequested)
             {
                 IconLayer.Background = new ImageBrush(image) { Stretch = Stretch.Uniform };
                 Badge.SetResourceReference(Border.BackgroundProperty, "IconPlateBrush");
@@ -140,9 +161,9 @@ public partial class PackageAvatarView : UserControl
         {
             // Kart gizlendi ya da başka pakete geçti.
         }
-        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception)
         {
-            // Bozuk dosya: harf kalır.
+            // async void: hiçbir hata arayüz iş parçacığına sızıp hata penceresini açmamalı; simge her zaman isteğe bağlıdır, harf kalır.
         }
     }
 
@@ -159,8 +180,9 @@ public partial class PackageAvatarView : UserControl
             image.Freeze();
             return image;
         }
-        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or InvalidOperationException)
+        catch (Exception)
         {
+            // FileFormatException, COMException, bozuk ya da kilitli dosya: hepsi "gösterilemiyor" demektir.
             return null;
         }
     }

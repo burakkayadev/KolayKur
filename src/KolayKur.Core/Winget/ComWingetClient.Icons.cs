@@ -10,7 +10,7 @@ namespace KolayKur.Core.Winget;
 public sealed partial class ComWingetClient
 {
     private static readonly TimeSpan HintCatalogLifetime = TimeSpan.FromMinutes(10);
-    private const int PreferredIconPixels = 64;
+    private const int PreferredIconPixels = IconRanking.PreferredPixels;
 
     // Önce kurulu programlar, sonra uzak kataloglar; Store kimlikleri bazen yalnız son kipte eşleşir (kurma yolundaki gibi).
     private static readonly CompositeSearchBehavior[] HintBehaviors =
@@ -20,18 +20,30 @@ public sealed partial class ComWingetClient
         CompositeSearchBehavior.RemotePackagesFromRemoteCatalogs,
     ];
 
-    private readonly ConcurrentDictionary<(bool Store, CompositeSearchBehavior Behavior), (DateTime Created, Task<PackageCatalog> Catalog)> hintCatalogs = new();
+    // Başarısız bağlantı da kısa süre hatırlanır: 120 kart yavaş Store bağlantısını tek tek yeniden denemesin.
+    private static readonly TimeSpan HintFailureLifetime = TimeSpan.FromMinutes(2);
+
+    private readonly ConcurrentDictionary<(bool Store, CompositeSearchBehavior Behavior), HintCatalogEntry> hintCatalogs = new();
 
     public Task<IconHints> GetIconHintsAsync(string packageId, string? source, CancellationToken ct) =>
         Task.Run(() => GetIconHintsCoreAsync(packageId, source, ct), ct);
 
     private async Task<IconHints> GetIconHintsCoreAsync(string packageId, string? source, CancellationToken ct)
     {
-        Task<CatalogPackage?> Find(bool includeStore) => FindForHintsAsync(includeStore, packageId, ct);
-        var package = string.Equals(source, PackageSources.Winget, StringComparison.OrdinalIgnoreCase)
+        var storeSkipped = false;
+        Task<CatalogPackage?> Find(bool includeStore)
+        {
+            storeSkipped = !includeStore;
+            return FindForHintsAsync(includeStore, packageId, ct);
+        }
+
+        var wingetOnly = string.Equals(source, PackageSources.Winget, StringComparison.OrdinalIgnoreCase);
+        var package = wingetOnly
             ? await Find(false).ConfigureAwait(false)
             : await StoreFallback.RunAsync(Find, log, ct).ConfigureAwait(false);
-        return package is null ? IconHints.Empty : ToIconHints(package);
+
+        // Store'a ulaşılamayıp yalnız winget'te aranan paket (Store kimliği olabilir) bulunamadıysa "yok" denemez.
+        return package is not null ? ToIconHints(package) : !wingetOnly && storeSkipped ? IconHints.Unknown : IconHints.Empty;
     }
 
     /// <summary>Önce yüklü katalogda (kurulu programlar, kurulu sürüm bilgisiyle), yoksa uzak kataloglarda arar.</summary>
@@ -69,33 +81,33 @@ public sealed partial class ComWingetClient
         return null;
     }
 
-    /// <summary>Çok sayıda kart için her seferinde yeniden bağlanmamak üzere bağlantı kısa süre paylaşılır; başarısız bağlantı saklanmaz.</summary>
+    /// <summary>
+    /// Çok sayıda kart için her seferinde yeniden bağlanmamak üzere bağlantı paylaşılır (başarılıysa 10 dk, başarısızsa 2 dk).
+    /// Bağlantı ilk isteyen çıkana kadar başlatılmaz (<see cref="Lazy{T}"/>), böylece yarışta yinelenen bağlantı açılmaz.
+    /// </summary>
     private async Task<PackageCatalog> HintCatalogAsync(bool includeStore, CompositeSearchBehavior behavior, CancellationToken ct)
     {
         var key = (includeStore, behavior);
         var now = DateTime.UtcNow;
         var entry = hintCatalogs.AddOrUpdate(
             key,
-            _ => (now, ConnectCatalogAsync(includeStore, behavior)),
-            (_, old) => now - old.Created > HintCatalogLifetime || old.Catalog.IsFaulted
-                ? (now, ConnectCatalogAsync(includeStore, behavior))
-                : old);
-        try
-        {
-            return await entry.Catalog.WaitAsync(ct).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            hintCatalogs.TryRemove(new KeyValuePair<(bool, CompositeSearchBehavior), (DateTime, Task<PackageCatalog>)>(key, entry));
-            throw;
-        }
+            _ => new HintCatalogEntry(now, NewConnection(includeStore, behavior)),
+            (_, old) => old.IsExpired(now) ? new HintCatalogEntry(now, NewConnection(includeStore, behavior)) : old);
+        return await entry.Connection.Value.WaitAsync(ct).ConfigureAwait(false);
     }
 
     // Paylaşılan bağlantı tek bir çağıranın iptaline bağlanmaz.
-    private async Task<PackageCatalog> ConnectCatalogAsync(bool includeStore, CompositeSearchBehavior behavior)
+    private Lazy<Task<PackageCatalog>> NewConnection(bool includeStore, CompositeSearchBehavior behavior) =>
+        new(() => Task.Run(async () =>
+        {
+            var (_, catalog) = await ConnectCompositeAsync(includeStore, behavior, CancellationToken.None).ConfigureAwait(false);
+            return catalog;
+        }));
+
+    private sealed record HintCatalogEntry(DateTime Created, Lazy<Task<PackageCatalog>> Connection)
     {
-        var (_, catalog) = await Task.Run(() => ConnectCompositeAsync(includeStore, behavior, CancellationToken.None)).ConfigureAwait(false);
-        return catalog;
+        public bool IsExpired(DateTime now) =>
+            now - Created > (Connection.IsValueCreated && Connection.Value.IsFaulted ? HintFailureLifetime : HintCatalogLifetime);
     }
 
     private static IconHints ToIconHints(CatalogPackage package)
@@ -121,24 +133,26 @@ public sealed partial class ComWingetClient
         return new IconHints(icons, website, InstalledSourceOf(installed));
     }
 
-    /// <summary>Uygun boyutlu (en az 64 px, yoksa en büyük), tarafsız temalı simgeler önce; yalnız https adresleri.</summary>
+    /// <summary>Katalogdaki simgeleri sıralar; yalnız https adresleri, yüksek kontrast temalılar atılır.</summary>
     private static List<Uri> RankIcons(IReadOnlyList<Icon> icons)
     {
-        var candidates = new List<(Uri Url, int Pixels, bool Neutral)>();
+        var candidates = new List<IconCandidate>();
         for (var i = 0; i < icons.Count; i++)
         {
             var icon = icons[i];
-            if (Uri.TryCreate(icon.Url, UriKind.Absolute, out var url) && url.Scheme == Uri.UriSchemeHttps)
+            if (Uri.TryCreate(icon.Url, UriKind.Absolute, out var url))
             {
-                candidates.Add((url, PixelsOf(icon.Resolution), icon.Theme is IconTheme.Default));
+                candidates.Add(new IconCandidate(url, PixelsOf(icon.Resolution), icon.Theme switch
+                {
+                    IconTheme.Light => IconThemeRank.Light,
+                    IconTheme.Dark => IconThemeRank.Dark,
+                    IconTheme.HighContrast => IconThemeRank.HighContrast,
+                    _ => IconThemeRank.Default,
+                }));
             }
         }
 
-        return [.. candidates
-            .OrderByDescending(c => c.Neutral)
-            .ThenBy(c => c.Pixels >= PreferredIconPixels ? 0 : 1)
-            .ThenBy(c => c.Pixels >= PreferredIconPixels ? c.Pixels : -c.Pixels)
-            .Select(c => c.Url)];
+        return IconRanking.Rank(candidates);
     }
 
     private static int PixelsOf(IconResolution resolution) => resolution switch

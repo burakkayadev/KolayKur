@@ -12,6 +12,9 @@ namespace KolayKur.Core.Icons;
 /// </summary>
 public sealed class WindowsIconDecoder : IIconDecoder
 {
+    /// <summary>Çözülecek karenin en büyük kenarı; daha büyükler çözülmeden reddedilir (bellek/CPU).</summary>
+    internal const int MaxSourcePixels = 1024;
+
     public async Task<byte[]?> ToPngAsync(byte[] data, CancellationToken ct)
     {
         try
@@ -31,10 +34,17 @@ public sealed class WindowsIconDecoder : IIconDecoder
         await input.WriteAsync(data.AsBuffer()).AsTask(ct).ConfigureAwait(false);
         input.Seek(0);
 
-        var decoder = await BitmapDecoder.CreateAsync(input).AsTask(ct).ConfigureAwait(false);
+        // Yalnızca dört biçim: sistemde kurulu her çözücüyü (GIF, TIFF, WebP, RAW...) değil, baytların başlığına uyan açık çözücüyü kullanır.
+        var decoderId = DecoderIdFor(data);
+        if (decoderId is null)
+        {
+            return null;
+        }
+
+        var decoder = await BitmapDecoder.CreateAsync(decoderId.Value, input).AsTask(ct).ConfigureAwait(false);
         var frame = await LargestFrameAsync(decoder, ct).ConfigureAwait(false);
         var (width, height) = (frame.PixelWidth, frame.PixelHeight);
-        if (width < IconLimits.MinPixels || height < IconLimits.MinPixels)
+        if (width < IconLimits.MinPixels || height < IconLimits.MinPixels || width > MaxSourcePixels || height > MaxSourcePixels)
         {
             return null;
         }
@@ -61,6 +71,16 @@ public sealed class WindowsIconDecoder : IIconDecoder
         await output.ReadAsync(png.AsBuffer(), (uint)png.Length, InputStreamOptions.None).AsTask(ct).ConfigureAwait(false);
         return png;
     }
+
+    /// <summary>İlk baytlara bakarak PNG, ICO, JPEG ya da BMP çözücüsünü seçer; başka her şey için <c>null</c>.</summary>
+    internal static Guid? DecoderIdFor(ReadOnlySpan<byte> d) => d switch
+    {
+        [0x89, 0x50, 0x4E, 0x47, ..] => BitmapDecoder.PngDecoderId,
+        [0x00, 0x00, 0x01, 0x00, ..] => BitmapDecoder.IcoDecoderId,
+        [0xFF, 0xD8, 0xFF, ..] => BitmapDecoder.JpegDecoderId,
+        [0x42, 0x4D, ..] => BitmapDecoder.BmpDecoderId,
+        _ => null,
+    };
 
     private static async Task<BitmapFrame> LargestFrameAsync(BitmapDecoder decoder, CancellationToken ct)
     {

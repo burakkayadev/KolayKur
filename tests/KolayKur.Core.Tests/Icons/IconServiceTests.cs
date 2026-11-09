@@ -214,6 +214,86 @@ public sealed class IconServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Corrupt_body_with_valid_header_is_refetched_and_ReportBroken_invalidates()
+    {
+        winget.IconHintsById[Package.Id] = new IconHints([CatalogIcon], null, null);
+        fetcher.Responses[CatalogIcon.AbsoluteUri] = TestPng.Make(seed: 9, padding: 60);
+        var service = Service();
+        var first = await service.GetIconPathAsync(Package, CancellationToken.None);
+
+        // Başlık ve uç parçası sağlam, IDAT gövdesinde bozulma: eski denetim bunu kabul ederdi.
+        var bytes = File.ReadAllBytes(first!);
+        bytes[8 + 25 + 8 + 10] ^= 0xFF;
+        File.WriteAllBytes(first!, bytes);
+        var second = await service.GetIconPathAsync(Package, CancellationToken.None);
+
+        Assert.Equal(2, fetcher.Requests.Count);
+        Assert.Equal(TestPng.Make(seed: 9, padding: 60), ReadAll(second));
+
+        // Arayüz çözemediği dosyayı bildirirse silinir ve sonraki istek yeniden bulur.
+        service.ReportBroken(second!);
+        Assert.False(File.Exists(second));
+        Assert.NotNull(await service.GetIconPathAsync(Package, CancellationToken.None));
+        Assert.Equal(3, fetcher.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Incomplete_hints_are_not_negatively_cached()
+    {
+        winget.IconHintsById[Package.Id] = IconHints.Unknown;
+        var service = Service();
+
+        Assert.Null(await service.GetIconPathAsync(Package, CancellationToken.None));
+        Assert.Null(await service.GetIconPathAsync(Package, CancellationToken.None));
+
+        Assert.False(dir.Cache().IsNegative(Package.Id));
+        Assert.Equal(2, winget.IconHintCalls);
+    }
+
+    [Fact]
+    public async Task Negative_before_install_does_not_block_icon_after_install()
+    {
+        winget.IconHintsById[Package.Id] = IconHints.Empty;
+        var service = Service();
+        Assert.Null(await service.GetIconPathAsync(Package, CancellationToken.None));
+        Assert.True(dir.Cache().IsNegative(Package.Id));
+
+        // Kurulduktan sonra yerel simge okunabilir.
+        var nowInstalled = Package with { InstalledVersion = "1.0" };
+        winget.IconHintsById[Package.Id] = new IconHints([], null, "location:C:\\App");
+        installed.Result = TestPng.Make(seed: 10);
+        var path = await service.GetIconPathAsync(nowInstalled, CancellationToken.None);
+
+        Assert.Equal(TestPng.Make(seed: 10), ReadAll(path));
+        Assert.False(dir.Cache().IsNegative(Package.Id));
+    }
+
+    [Fact]
+    public async Task Last_waiter_leaving_cancels_the_job_and_saves_no_negative()
+    {
+        winget.IconHintsById[Package.Id] = new IconHints([CatalogIcon], null, null);
+        fetcher.Gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var service = Service();
+        using var first = new CancellationTokenSource();
+        using var second = new CancellationTokenSource();
+
+        var a = service.GetIconPathAsync(Package, first.Token);
+        var b = service.GetIconPathAsync(Package, second.Token);
+        await WaitUntilAsync(() => fetcher.Requests.Count >= 1);
+
+        first.Cancel();
+        Assert.Null(await a);
+        Assert.Equal(0, fetcher.Cancelled);
+        second.Cancel();
+        Assert.Null(await b);
+        await WaitUntilAsync(() => fetcher.Cancelled >= 1);
+
+        await Task.Delay(50);
+        Assert.False(dir.Cache().IsNegative(Package.Id));
+        Assert.Null(dir.Cache().TryGet(Package.Id));
+    }
+
+    [Fact]
     public void Cache_is_trimmed_above_limit()
     {
         var cache = dir.Cache(maxBytes: 3000);

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 
 namespace KolayKur.Core.Icons;
 
@@ -14,8 +15,15 @@ public sealed class HttpIconFetcher : IIconFetcher, IDisposable
 
     private readonly HttpClient client;
 
+    // Vekil kullanılmaz: bağlantı geri çağrısı hedefin adresini kendisi çözüp denetler; vekil olsaydı denetlenen adres vekilin adresi olurdu.
     public HttpIconFetcher()
-        : this(new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, UseProxy = true })
+        : this(new SocketsHttpHandler
+        {
+            AllowAutoRedirect = false,
+            UseCookies = false,
+            UseProxy = false,
+            ConnectCallback = (context, ct) => ConnectCheckedAsync(context.DnsEndPoint, ct),
+        })
     {
     }
 
@@ -33,6 +41,10 @@ public sealed class HttpIconFetcher : IIconFetcher, IDisposable
         {
             return await FetchCoreAsync(url, timeout.Token).ConfigureAwait(false);
         }
+        catch (HttpRequestException ex) when (ex.InnerException is BlockedAddressException)
+        {
+            return null;
+        }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             throw new TimeoutException($"icon download timed out: {url.Host}");
@@ -40,6 +52,49 @@ public sealed class HttpIconFetcher : IIconFetcher, IDisposable
     }
 
     public void Dispose() => client.Dispose();
+
+    /// <summary>
+    /// Adı kendisi çözer, yalnızca <see cref="IconSiteRules.IsAllowedAddress"/> geçen adreslere bağlanır ve bağlandığı <c>IPAddress</c>'i kullanır
+    /// (ad çözümleme sonradan başka bir adres vermesin). Hiçbir adres uygun değilse <see cref="BlockedAddressException"/>.
+    /// </summary>
+    internal static async ValueTask<Stream> ConnectCheckedAsync(DnsEndPoint endPoint, CancellationToken ct)
+    {
+        var host = endPoint.Host;
+        var addresses = IPAddress.TryParse(host.Trim('[', ']'), out var literal)
+            ? [literal]
+            : await Dns.GetHostAddressesAsync(host, ct).ConfigureAwait(false);
+        var allowed = addresses.Where(IconSiteRules.IsAllowedAddress).ToList();
+        if (allowed.Count == 0)
+        {
+            throw new BlockedAddressException(host);
+        }
+
+        Exception? last = null;
+        foreach (var address in allowed)
+        {
+            var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(new IPEndPoint(address, endPoint.Port), ct).ConfigureAwait(false);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch (SocketException ex)
+            {
+                socket.Dispose();
+                last = ex;
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        }
+
+        throw new HttpRequestException("icon host unreachable", last);
+    }
+
+    /// <summary>Ana makine yalnızca izin verilmeyen (özel/yerel) adreslere çözülüyor.</summary>
+    internal sealed class BlockedAddressException(string host) : IOException($"blocked address for {host}");
 
     private async Task<byte[]?> FetchCoreAsync(Uri start, CancellationToken ct)
     {

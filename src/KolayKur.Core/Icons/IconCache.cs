@@ -12,9 +12,8 @@ namespace KolayKur.Core.Icons;
 public sealed class IconCache(string directory, long maxBytes = IconLimits.MaxCacheBytes, TimeProvider? time = null)
 {
     private const int MaxIdChars = 80;
-    private static readonly byte[] PngSignature = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-    private static readonly byte[] PngEnd = [0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82];
-    private const int PngMinLength = 8 + 25 + 12;
+    private const int MaxCachedFileBytes = 4 * 1024 * 1024;
+    private const string InstalledSuffix = "#installed";
 
     private readonly TimeProvider clock = time ?? TimeProvider.System;
     private readonly object trimGate = new();
@@ -51,11 +50,11 @@ public sealed class IconCache(string directory, long maxBytes = IconLimits.MaxCa
     }
 
     /// <summary>"Simge yok" kaydı 7 günden yeniyse <c>true</c>.</summary>
-    public bool IsNegative(string packageId)
+    public bool IsNegative(string packageId, bool installed = false)
     {
         try
         {
-            var marker = NegativePath(packageId);
+            var marker = NegativePath(packageId, installed);
             if (!File.Exists(marker))
             {
                 return false;
@@ -91,7 +90,8 @@ public sealed class IconCache(string directory, long maxBytes = IconLimits.MaxCa
                 TryDelete(old);
             }
 
-            TryDelete(NegativePath(packageId));
+            TryDelete(NegativePath(packageId, installed: false));
+            TryDelete(NegativePath(packageId, installed: true));
             Trim();
             return File.Exists(path) ? path : null;
         }
@@ -101,12 +101,12 @@ public sealed class IconCache(string directory, long maxBytes = IconLimits.MaxCa
         }
     }
 
-    public void PutNegative(string packageId)
+    public void PutNegative(string packageId, bool installed = false)
     {
         try
         {
             System.IO.Directory.CreateDirectory(directory);
-            File.WriteAllBytes(NegativePath(packageId), []);
+            File.WriteAllBytes(NegativePath(packageId, installed), []);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -141,7 +141,9 @@ public sealed class IconCache(string directory, long maxBytes = IconLimits.MaxCa
         }
     }
 
-    private string NegativePath(string packageId) => Path.Combine(directory, Prefix(packageId) + ".none");
+    // "Kurulu değil" ve "kurulu" için ayrı kayıt: kurulumdan önce verilen "simge yok" kurulumdan sonra engel olmaz.
+    private string NegativePath(string packageId, bool installed) =>
+        Path.Combine(directory, Prefix(installed ? packageId + InstalledSuffix : packageId) + ".none");
 
     private static string Prefix(string packageId)
     {
@@ -157,30 +159,32 @@ public sealed class IconCache(string directory, long maxBytes = IconLimits.MaxCa
     private static string Hash(string text) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
-    /// <summary>Başlık, uç parçası ve en az 16 piksel boyut denetimi (yarım kalmış ya da bozulmuş dosyayı eler).</summary>
+    /// <summary>Bütün parçaların uzunluk ve CRC denetimi (bkz. <see cref="PngIntegrity"/>) ve en az 16 piksel boyut.</summary>
     internal static bool IsValidPng(string path)
     {
         try
         {
-            using var stream = File.OpenRead(path);
-            if (stream.Length < PngMinLength)
+            if (new FileInfo(path).Length > MaxCachedFileBytes)
             {
                 return false;
             }
 
-            var head = new byte[24];
-            stream.ReadExactly(head);
-            stream.Seek(-PngEnd.Length, SeekOrigin.End);
-            var tail = new byte[PngEnd.Length];
-            stream.ReadExactly(tail);
-            var width = (head[16] << 24) | (head[17] << 16) | (head[18] << 8) | head[19];
-            var height = (head[20] << 24) | (head[21] << 16) | (head[22] << 8) | head[23];
-            return head.AsSpan(0, 8).SequenceEqual(PngSignature) && tail.AsSpan().SequenceEqual(PngEnd)
-                && width >= IconLimits.MinPixels && height >= IconLimits.MinPixels;
+            return PngIntegrity.Inspect(File.ReadAllBytes(path)) is (int w, int h) && w >= IconLimits.MinPixels && h >= IconLimits.MinPixels;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return false;
+        }
+    }
+
+    /// <summary>Önbellek dışındaki yolları yok sayar; bozuk çıkan dosyayı siler ki sonraki istekte yeniden bulunsun.</summary>
+    public void Invalidate(string path)
+    {
+        var full = Path.GetFullPath(path);
+        var root = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        {
+            TryDelete(full);
         }
     }
 
