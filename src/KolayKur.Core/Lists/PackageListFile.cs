@@ -26,10 +26,13 @@ public static class PackageListFile
     public const int MaxPackages = 500;
 
     private const string SchemaUrl = "https://aka.ms/winget-packages.schema.2.0.json";
-    private const string SourceArgument = "https://cdn.winget.microsoft.com/cache";
-    private const string SourceIdentifier = "Microsoft.Winget.Source_8wekyb3d8bbwe";
-    private const string SourceName = "winget";
-    private const string SourceType = "Microsoft.PreIndexed.Package";
+
+    // `SourceDetails` değerleri winget'in kendi dışa aktarımındaki gibidir; `winget import` kaynağı bunlarla eşler.
+    private static readonly SourceDetailsData WingetSource = new(
+        "https://cdn.winget.microsoft.com/cache", "Microsoft.Winget.Source_8wekyb3d8bbwe", PackageSources.Winget, "Microsoft.PreIndexed.Package");
+
+    private static readonly SourceDetailsData StoreSource = new(
+        "https://storeedgefd.dsx.mp.microsoft.com/v9.0", "StoreEdgeFD", PackageSources.MicrosoftStore, "Microsoft.Rest");
 
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
@@ -39,31 +42,47 @@ public static class PackageListFile
     private static readonly string[] SourcelessIdPrefixes = [@"ARP\", @"MSIX\"];
 
     /// <summary>
-    /// Kimlik <c>winget export</c> dosyasına yazılabilir mi? Winget kaynağı olmayan (ARP\ ve MSIX\ ile başlayan) ve boş
-    /// kimlikler yazılmaz; <see cref="Save"/> kendisine verileni olduğu gibi yazar, süzmeyi çağıran yapar.
+    /// Paket <c>winget export</c> dosyasına yazılabilir mi? Kaynağı winget veya msstore olmalı; kaynaksız kayıtlar,
+    /// ARP\ ve MSIX\ ile başlayan kimlikler ve boş kimlikler yazılmaz. <see cref="Save"/> bilinen kaynaklı paketleri
+    /// yazar, diğerlerini atlar.
     /// </summary>
-    public static bool IsExportable(string id) =>
-        !string.IsNullOrWhiteSpace(id)
-        && !Array.Exists(SourcelessIdPrefixes, prefix => id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    public static bool IsExportable(PackageInfo package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        return package.Source is PackageSources.Winget or PackageSources.MicrosoftStore
+            && !string.IsNullOrWhiteSpace(package.Id)
+            && !Array.Exists(SourcelessIdPrefixes, prefix => package.Id.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
-    /// Kimlikleri tek kaynaklı (winget) bir liste olarak yazar. Önce geçici dosyaya yazıp asıl dosyanın yerine koyar,
-    /// yarım dosya kalmaz. G/Ç hataları (<see cref="IOException"/> vb.) çağırana yansır.
+    /// Paketleri kaynak başına bir <c>Sources</c> girdisi olarak yazar (önce winget, sonra msstore; yalnızca paketi
+    /// olan kaynaklar, hiç paket yoksa paketsiz bir winget girdisi). Dışa aktarılamayan paketler atlanır. Önce geçici dosyaya
+    /// yazıp asıl dosyanın yerine koyar, yarım dosya kalmaz. G/Ç hataları (<see cref="IOException"/> vb.) çağırana yansır.
     /// </summary>
     public static void Save(string path, IEnumerable<PackageInfo> packages, string wingetVersion)
     {
         ArgumentNullException.ThrowIfNull(packages);
 
+        var exportable = packages.Where(IsExportable).ToList();
+        var sources = new List<ExportSource>();
+        foreach (var details in new[] { WingetSource, StoreSource })
+        {
+            if (exportable.Any(package => package.Source == details.Name))
+            {
+                sources.Add(SourceOf(details, exportable));
+            }
+        }
+
+        if (sources.Count == 0)
+        {
+            // Boş liste de geçerli bir `winget export` dosyası olsun: paketsiz tek winget girdisi.
+            sources.Add(SourceOf(WingetSource, exportable));
+        }
+
         var export = new ExportFile
         {
             CreationDate = DateTimeOffset.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'-00:00'", CultureInfo.InvariantCulture),
-            Sources =
-            [
-                new ExportSource
-                {
-                    Packages = [.. packages.Select(package => new ExportPackage { PackageIdentifier = package.Id })],
-                },
-            ],
+            Sources = sources,
             WinGetVersion = wingetVersion,
         };
 
@@ -109,6 +128,17 @@ public static class PackageListFile
             throw new PackageListFormatException("Liste dosyası geçerli bir JSON değil.", ex);
         }
     }
+
+    private static ExportSource SourceOf(SourceDetailsData details, List<PackageInfo> exportable) => new()
+    {
+        Packages =
+        [
+            .. exportable
+                .Where(package => package.Source == details.Name)
+                .Select(package => new ExportPackage { PackageIdentifier = package.Id }),
+        ],
+        SourceDetails = details,
+    };
 
     private static List<string> ReadIdentifiers(JsonElement root)
     {
@@ -179,7 +209,7 @@ public static class PackageListFile
     {
         public required List<ExportPackage> Packages { get; init; }
 
-        public SourceDetailsData SourceDetails { get; init; } = new();
+        public required SourceDetailsData SourceDetails { get; init; }
     }
 
     private sealed class ExportPackage
@@ -187,14 +217,5 @@ public static class PackageListFile
         public required string PackageIdentifier { get; init; }
     }
 
-    private sealed class SourceDetailsData
-    {
-        public string Argument { get; init; } = SourceArgument;
-
-        public string Identifier { get; init; } = SourceIdentifier;
-
-        public string Name { get; init; } = SourceName;
-
-        public string Type { get; init; } = SourceType;
-    }
+    private sealed record SourceDetailsData(string Argument, string Identifier, string Name, string Type);
 }

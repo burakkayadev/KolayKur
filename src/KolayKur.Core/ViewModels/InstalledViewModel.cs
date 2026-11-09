@@ -133,8 +133,9 @@ public sealed partial class InstalledViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Yüklü uygulamaların kimliklerini seçilen dosyaya yazar; winget kaynağı olmayan kayıtlar (ARP\, MSIX\) yazılmaz,
-    /// böylece dosya "Listeden kur" ile geri okununca bulunamayan işler üretmez. Liste yüklenirken veya yazılacak kayıt
+    /// Yüklü uygulamaların kimliklerini seçilen dosyaya kaynaklarına göre (winget, Microsoft Store) yazar; kaynağı
+    /// bilinmeyen kayıtlar (ARP\, MSIX\ dahil) yazılmaz, böylece dosya "Listeden kur" ile geri okununca bulunamayan
+    /// işler üretmez. Liste yüklenirken veya yazılacak kayıt
     /// yokken kullanılamaz (boş ya da eksik bir dosya yazılmasın). Seçici iptal edilirse bir şey yapmaz; başarıdan sonra
     /// kaç uygulamanın nereye kaydedildiği söylenir.
     /// </summary>
@@ -154,7 +155,7 @@ public sealed partial class InstalledViewModel : ObservableObject
         }
 
         ErrorKey = null;
-        var exportable = Packages.Where(package => PackageListFile.IsExportable(package.Id)).ToList();
+        var exportable = Packages.Where(package => PackageListFile.IsExportable(package)).ToList();
         try
         {
             PackageListFile.Save(path, exportable, wingetVersion());
@@ -170,7 +171,7 @@ public sealed partial class InstalledViewModel : ObservableObject
     }
 
     private bool CanExport() =>
-        !IsLoading && Packages.Any(package => PackageListFile.IsExportable(package.Id));
+        !IsLoading && Packages.Any(PackageListFile.IsExportable);
 
     /// <summary>
     /// Seçilen dosyadaki her kimlik için kurulum işi ekler, ama önce kaç uygulamanın kurulacağını (ilk adlarıyla) sorar;

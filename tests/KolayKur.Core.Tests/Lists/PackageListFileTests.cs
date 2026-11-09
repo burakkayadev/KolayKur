@@ -13,7 +13,8 @@ public sealed class PackageListFileTests : IDisposable
 
     public void Dispose() => Directory.Delete(directory, recursive: true);
 
-    private static PackageInfo Pkg(string id) => new(id, $"{id} adı", "Yayıncı", "1.0", null);
+    private static PackageInfo Pkg(string id, string? source = PackageSources.Winget) =>
+        new(id, $"{id} adı", "Yayıncı", "1.0", null, source);
 
     private string FileWith(string content)
     {
@@ -117,19 +118,21 @@ public sealed class PackageListFileTests : IDisposable
     }
 
     [Theory]
-    [InlineData("Git.Git", true)]
-    [InlineData("7zip.7zip", true)]
-    [InlineData("Microsoft.WindowsTerminal", true)]
-    [InlineData(@"ARP\Machine\X64\Foo", false)]
-    [InlineData(@"ARP\User\X86\Foo 1.0", false)]
-    [InlineData(@"arp\machine\x64\foo", false)]
-    [InlineData(@"MSIX\Bar_1.0_x64__abc", false)]
-    [InlineData(@"msix\bar_1.0_x64__abc", false)]
-    [InlineData("", false)]
-    [InlineData("   ", false)]
-    public void IsExportable_excludes_ids_without_a_winget_source(string id, bool expected)
+    [InlineData("Git.Git", "winget", true)]
+    [InlineData("Microsoft.WindowsTerminal", "winget", true)]
+    [InlineData("9WZDNCRFJ3TJ", "msstore", true)]
+    [InlineData("Git.Git", null, false)]
+    [InlineData("Git.Git", "other", false)]
+    [InlineData(@"ARP\Machine\X64\Foo", "winget", false)]
+    [InlineData(@"ARP\User\X86\Foo 1.0", "msstore", false)]
+    [InlineData(@"arp\machine\x64\foo", "winget", false)]
+    [InlineData(@"MSIX\Bar_1.0_x64__abc", "winget", false)]
+    [InlineData(@"msix\bar_1.0_x64__abc", "msstore", false)]
+    [InlineData("", "winget", false)]
+    [InlineData("   ", "msstore", false)]
+    public void Unknown_source_is_not_exportable(string id, string? source, bool expected)
     {
-        Assert.Equal(expected, PackageListFile.IsExportable(id));
+        Assert.Equal(expected, PackageListFile.IsExportable(Pkg(id, source)));
     }
 
     [Theory]
@@ -137,8 +140,70 @@ public sealed class PackageListFileTests : IDisposable
     [InlineData("MSIXHero.MSIXHero")]
     public void IsExportable_keeps_real_ids_that_merely_start_with_the_same_letters(string id)
     {
-        Assert.True(PackageListFile.IsExportable(id));
+        Assert.True(PackageListFile.IsExportable(Pkg(id)));
     }
+
+    [Fact]
+    public void Save_writes_one_source_entry_per_source()
+    {
+        // Arrange
+        var path = Path.Combine(directory, "liste.json");
+
+        // Act: sıra girdi sırasından bağımsız: önce winget, sonra msstore; kaynaksız paket yazılmaz.
+        PackageListFile.Save(
+            path,
+            [Pkg("9WZDNCRFJ3TJ", PackageSources.MicrosoftStore), Pkg("Git.Git"), Pkg("Yok.Kaynak", null), Pkg("7zip.7zip")],
+            "1.29.380");
+
+        // Assert
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var sources = document.RootElement.GetProperty("Sources").EnumerateArray().ToList();
+        Assert.Equal(2, sources.Count);
+
+        var winget = sources[0].GetProperty("SourceDetails");
+        Assert.Equal("winget", winget.GetProperty("Name").GetString());
+        Assert.Equal("Microsoft.Winget.Source_8wekyb3d8bbwe", winget.GetProperty("Identifier").GetString());
+        Assert.Equal(["Git.Git", "7zip.7zip"], IdsOf(sources[0]));
+
+        var store = sources[1].GetProperty("SourceDetails");
+        Assert.Equal("msstore", store.GetProperty("Name").GetString());
+        Assert.Equal("StoreEdgeFD", store.GetProperty("Identifier").GetString());
+        Assert.Equal("Microsoft.Rest", store.GetProperty("Type").GetString());
+        Assert.Equal("https://storeedgefd.dsx.mp.microsoft.com/v9.0", store.GetProperty("Argument").GetString());
+        Assert.Equal(["9WZDNCRFJ3TJ"], IdsOf(sources[1]));
+    }
+
+    [Fact]
+    public void Save_writes_only_the_sources_that_have_packages()
+    {
+        var path = Path.Combine(directory, "liste.json");
+
+        PackageListFile.Save(path, [Pkg("9WZDNCRFJ3TJ", PackageSources.MicrosoftStore)], "1.29.380");
+
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var source = document.RootElement.GetProperty("Sources").EnumerateArray().Single();
+        Assert.Equal("msstore", source.GetProperty("SourceDetails").GetProperty("Name").GetString());
+    }
+
+    [Fact]
+    public void Load_reads_ids_from_all_sources()
+    {
+        var path = Path.Combine(directory, "liste.json");
+        PackageListFile.Save(path, [Pkg("Git.Git"), Pkg("9WZDNCRFJ3TJ", PackageSources.MicrosoftStore)], "1.29.380");
+
+        Assert.Equal(["Git.Git", "9WZDNCRFJ3TJ"], PackageListFile.Load(path));
+    }
+
+    [Fact]
+    public void Load_still_reads_old_single_source_files()
+    {
+        var sample = Path.Combine(AppContext.BaseDirectory, "Samples", "winget-export.json");
+
+        Assert.Equal(3, PackageListFile.Load(sample).Count);
+    }
+
+    private static List<string?> IdsOf(JsonElement source) =>
+        [.. source.GetProperty("Packages").EnumerateArray().Select(p => p.GetProperty("PackageIdentifier").GetString())];
 
     [Fact]
     public void Save_of_an_empty_list_writes_a_valid_file_that_loads_as_empty()

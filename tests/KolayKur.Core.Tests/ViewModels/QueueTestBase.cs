@@ -34,7 +34,8 @@ public abstract class QueueTestBase : IDisposable
     /// <summary>Test için geçici günlük (test bitince silinir); günlüğe yazılanı okumak için <see cref="FileLog.CurrentFile"/>.</summary>
     protected FileLog TestLog => new(logDirectory);
 
-    protected static PackageInfo Pkg(string id) => new(id, id, "Yayıncı", "1.0", "2.0");
+    protected static PackageInfo Pkg(string id, string? source = PackageSources.Winget) =>
+        new(id, id, "Yayıncı", "1.0", "2.0", source);
 
     protected static async Task WaitUntilAsync(Func<bool> condition)
     {

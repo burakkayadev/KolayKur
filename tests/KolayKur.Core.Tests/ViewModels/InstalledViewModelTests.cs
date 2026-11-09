@@ -276,6 +276,33 @@ public sealed class InstalledViewModelTests : QueueTestBase
     }
 
     [Fact]
+    public async Task Export_includes_store_apps()
+    {
+        // Arrange: winget + msstore yazılır; kaynaksızlar (ve ARP\) yazılmaz; sayı yazılan sayıdır.
+        client.Installed =
+        [
+            Pkg("Git.Git"),
+            Pkg("9WZDNCRFJ3TJ", PackageSources.MicrosoftStore),
+            Pkg("Yok.Kaynak", null),
+            Pkg(@"ARP\Machine\X64\Foo", null),
+        ];
+        var path = TempFile("liste.json");
+        dialogs.SaveFilePath = path;
+        var (viewModel, _) = Create();
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        // Act
+        viewModel.ExportCommand.Execute(null);
+
+        // Assert
+        Assert.Equal(["Git.Git", "9WZDNCRFJ3TJ"], PackageListFile.Load(path));
+        var message = Assert.Single(dialogs.Informed);
+        Assert.Equal(
+            string.Format(System.Globalization.CultureInfo.InvariantCulture, Loc.Instance["Installed_ExportDone"], 2, path),
+            message);
+    }
+
+    [Fact]
     public async Task Export_is_disabled_when_nothing_is_exportable_and_writes_nothing()
     {
         // Arrange: yalnızca winget kaynağı olmayan kayıtlar var; boş bir dosya yazılmamalı.
@@ -481,7 +508,7 @@ public sealed class InstalledViewModelTests : QueueTestBase
         // Arrange: 7 uygulama; ilk 5'i adıyla, kalanı sayıyla gösterilir.
         var ids = Enumerable.Range(1, 7).Select(i => $"Vendor.App{i}").ToArray();
         var path = TempFile("liste.json");
-        PackageListFile.Save(path, ids.Select(Pkg), Version);
+        PackageListFile.Save(path, ids.Select(id => Pkg(id)), Version);
         dialogs.OpenFilePath = path;
         var (viewModel, queue) = Create();
 
