@@ -87,6 +87,25 @@ public class ComWingetClientRealTests
     }
 
     [Fact]
+    public async Task Store_id_is_found_for_install()
+    {
+        // Kurulumun kullandığı kesin kimlik araması; hiçbir şey kurulmaz.
+        var target = await client.FindInstallTargetAsync("9WZDNCRFJ3TJ", Timeout());
+
+        Assert.NotNull(target);
+        Assert.Equal(PackageSources.MicrosoftStore, target!.Source, ignoreCase: true);
+    }
+
+    [Fact]
+    public async Task Winget_id_is_found_for_install_ignoring_case()
+    {
+        var target = await client.FindInstallTargetAsync("git.git", Timeout());
+
+        Assert.NotNull(target);
+        Assert.Equal("Git.Git", target!.Id, ignoreCase: true);
+    }
+
+    [Fact]
     public async Task Unknown_store_id_is_not_found()
     {
         var outcome = await client.InstallAsync("9ZZZZZZZZZZZ", new RecordingProgress(), Timeout());

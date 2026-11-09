@@ -40,7 +40,7 @@ public sealed partial class ComWingetClient
         foreach (var behavior in HintBehaviors)
         {
             var catalog = await HintCatalogAsync(includeStore, behavior, ct).ConfigureAwait(false);
-            var found = await FindExactForHintsAsync(catalog, packageId, ct).ConfigureAwait(false);
+            var found = await FindExactAsync(catalog, packageId, ct).ConfigureAwait(false);
             if (found is not null)
             {
                 return found;
@@ -54,7 +54,7 @@ public sealed partial class ComWingetClient
     /// Kesin kimlik araması. Microsoft Store kimlikleri (örn. 9WZDNCRFJ3TJ) <c>EqualsCaseInsensitive</c> ile eşleşmez
     /// (elle denendi: 0 sonuç), <c>Equals</c> ile eşleşir; bu yüzden önce o, sonra büyük/küçük harf duyarsız denenir.
     /// </summary>
-    private async Task<CatalogPackage?> FindExactForHintsAsync(PackageCatalog catalog, string packageId, CancellationToken ct)
+    private async Task<CatalogPackage?> FindExactAsync(PackageCatalog catalog, string packageId, CancellationToken ct)
     {
         foreach (var option in new[] { PackageFieldMatchOption.Equals, PackageFieldMatchOption.EqualsCaseInsensitive })
         {

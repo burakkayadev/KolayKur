@@ -206,11 +206,12 @@ public sealed partial class ComWingetClient(WingetComFactory factory, FileLog? l
             log,
             ct);
 
-    private async Task<CatalogPackage?> FindExactAsync(PackageCatalog catalog, string packageId, CancellationToken ct)
+    /// <summary>Yalnız test için: kurulumun kullanacağı aramayla paketi bulur, hiçbir şey kurmaz.</summary>
+    internal async Task<PackageInfo?> FindInstallTargetAsync(string packageId, CancellationToken ct)
     {
-        var filter = MatchFilter(PackageMatchField.Id, PackageFieldMatchOption.EqualsCaseInsensitive, packageId);
-        var matches = await FindAsync(catalog, filter, 0, ct).ConfigureAwait(false);
-        return matches.FirstOrDefault(p => string.Equals(p.Id, packageId, StringComparison.OrdinalIgnoreCase));
+        var (_, package) = await ResolveExactAsync(
+            includeStore => ConnectRemoteAsync(includeStore, ct), packageId, ct).ConfigureAwait(false);
+        return package is null ? null : ToInfo(package);
     }
 
     /// <summary>Yüklü katalogdaki her paket (winget kataloğundaki eşleşmeleriyle birlikte).</summary>
