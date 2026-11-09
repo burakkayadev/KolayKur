@@ -28,13 +28,29 @@ public sealed partial class ComWingetClient(WingetComFactory factory, FileLog? l
         Task.Run(() => GetUpgradesCoreAsync(ct), ct);
 
     public Task<OperationOutcome> InstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
-        Task.Run(() => InstallCoreAsync(packageId, progress, ct), ct);
+        Task.Run(() => ChangingInstalledAsync(() => InstallCoreAsync(packageId, progress, ct)), ct);
 
     public Task<OperationOutcome> UpgradeAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
-        Task.Run(() => UpgradeCoreAsync(packageId, progress, ct), ct);
+        Task.Run(() => ChangingInstalledAsync(() => UpgradeCoreAsync(packageId, progress, ct)), ct);
 
     public Task<OperationOutcome> UninstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
-        Task.Run(() => UninstallCoreAsync(packageId, progress, ct), ct);
+        Task.Run(() => ChangingInstalledAsync(() => UninstallCoreAsync(packageId, progress, ct)), ct);
+
+    /// <summary>
+    /// Kurulu durumu değiştiren işlerden sonra simge ipuçları için paylaşılan katalog bağlantıları bırakılır:
+    /// eski anlık görüntü yeni kurulan programı göstermez ve "simge yok" sonucu yanlışlıkla 7 gün saklanırdı.
+    /// </summary>
+    private async Task<OperationOutcome> ChangingInstalledAsync(Func<Task<OperationOutcome>> operation)
+    {
+        try
+        {
+            return await operation().ConfigureAwait(false);
+        }
+        finally
+        {
+            hintCatalogs.Clear();
+        }
+    }
 
     private async Task<IReadOnlyList<PackageInfo>> SearchCoreAsync(string query, CancellationToken ct)
     {

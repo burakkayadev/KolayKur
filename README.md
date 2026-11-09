@@ -22,7 +22,7 @@ KolayKur, Windows'un paket yöneticisi winget'i ve Microsoft Store'u terminal a�
 - **Yazılabilir klasör:** program ilk açılışta çalışması için gereken küçük bir dosyayı (`Microsoft.Management.Deployment.winmd`, yaklaşık 64 KB) `KolayKur.exe`'nin yanına çıkarır. Klasör yazılamıyorsa program bunu söyler; exe'yi başka bir klasöre taşımanız yeterlidir.
 - **Winget onarımı:** winget yoksa veya bozuksa program bunu algılar ve kurmayı ya da onarmayı önerir (Ayarlar sayfasındaki "Onar" düğmesiyle de açılır).
 - **İzinler:** program normal kullanıcı olarak çalışır. Bir uygulamanın kurulumu yönetici izni isterse Windows'un kendi izin penceresi (UAC) çıkar; "Hayır" derseniz yalnızca o iş iptal olur, sıradaki işler devam eder.
-- **Gizlilik (simgeler):** KolayKur uygulama simgelerini winget kataloğunda verilen adreslerden ve uygulamanın ya da yayıncının kendi sitesinden indirir; bu siteler bağlantınızı görür. Hiçbir aracı servis kullanılmaz. Simgeler `%LocalAppData%\KolayKur\icons` klasöründe saklanır (en çok 50 MB). Simge bulunamazsa ya da internet yoksa kartta uygulamanın ilk harfi görünür.
+- **Gizlilik (simgeler):** KolayKur uygulama simgelerini winget kataloğunda verilen adreslerden ve uygulamanın ya da yayıncının kendi sitesinden indirir; bu siteler bağlantınızı görür. Hiçbir aracı servis kullanılmaz. Simgeler `%LocalAppData%\KolayKur\icons` klasöründe saklanır (en çok 50 MB). Simge bulunamazsa ya da internet yoksa kartta uygulamanın ilk harfi görünür. Vekil sunucu (proxy) gerektiren ağlarda simgeler indirilmez, ilk harf görünür.
 
 ## Özellikler
 
@@ -119,7 +119,7 @@ KolayKur is a small Windows program that lets you use winget (the Windows packag
 
 **Administrator rights:** the program runs as a normal user. If an installer needs admin rights, Windows shows its own UAC prompt; answering "No" cancels only that job and the queue continues.
 
-**Privacy (icons):** KolayKur downloads app icons from the addresses given in the winget catalog and from the app's or publisher's own website; those sites see your connection. No third-party icon service is used. Icons are stored in `%LocalAppData%\KolayKur\icons` (50 MB at most). If no icon is found, or you are offline, the card shows the app's first letter.
+**Privacy (icons):** KolayKur downloads app icons from the addresses given in the winget catalog and from the app's or publisher's own website; those sites see your connection. No third-party icon service is used. Icons are stored in `%LocalAppData%\KolayKur\icons` (50 MB at most). If no icon is found, or you are offline, the card shows the app's first letter. On networks that require a proxy, icons are not downloaded and the first letter is shown.
 
 **Files:** settings and logs are in `%LocalAppData%\KolayKur`; app icons are cached in `%LocalAppData%\KolayKur\icons`; files downloaded during a winget repair go to `%LocalAppData%\KolayKur\downloads` and are deleted after a successful repair. The program also leaves the `Microsoft.Management.Deployment.winmd` file next to `KolayKur.exe` and the .NET single-file extraction folder `%TEMP%\.net\KolayKur` (safe to delete).
 
