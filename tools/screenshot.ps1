@@ -91,7 +91,7 @@ $oldEnv = $env:KOLAYKUR_DATA_DIR
 $proc = $null
 try {
     New-Item -ItemType Directory -Path $temp | Out-Null
-    $settings = [ordered]@{ Language = $Lang; LicenseNoticeShown = $true; Theme = $Theme } | ConvertTo-Json
+    $settings = [ordered]@{ Language = $Lang; LicenseNoticeShown = $true; LicenseNoticeVersion = 99; Theme = $Theme } | ConvertTo-Json
     [System.IO.File]::WriteAllText((Join-Path $temp 'settings.json'), $settings, (New-Object System.Text.UTF8Encoding($false)))
 
     $env:KOLAYKUR_DATA_DIR = $temp
@@ -115,6 +115,8 @@ try {
     # Yalnızca menü düğmesi: RadioButton seçilir.
     $menuButton.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select()
     Start-Sleep -Milliseconds 600
+    # Liste sayfaları winget'ten okur; yükleme göstergesi bitsin diye beklenir.
+    if ($Page -in @('Installed', 'Updates')) { Start-Sleep -Seconds 8 }
 
     # Yalnızca başlıktaki "İşlemler" geçiş düğmesi: panel kapalıysa açılır (iş eklemez, başka düğmeye basmaz).
     if ($OpenPane) {

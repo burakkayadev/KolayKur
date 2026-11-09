@@ -22,6 +22,15 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Sürümü bilinmeyen kayıtlarda (winget "Unknown") sürüm etiketi gizlenir (yer korunur, düğmeler hizalı kalır). -->
+        <Style x:Key="VersionChipVisibilityStyle" TargetType="Border" BasedOn="{StaticResource VersionChipStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding InstalledVersion}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Hidden" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <DataTemplate x:Key="InstalledCardTemplate">
             <Border Style="{StaticResource AppCardStyle}">
                 <Grid>
@@ -55,7 +64,7 @@
                     </StackPanel>
 
                     <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,12,0,0"
-                            Style="{StaticResource VersionChipStyle}" MaxWidth="140">
+                            Style="{StaticResource VersionChipVisibilityStyle}" MaxWidth="140">
                         <TextBlock Text="{Binding InstalledVersion}" Style="{StaticResource SecondaryTextStyle}"
                                    ToolTip="{Binding InstalledVersion}" />
                     </Border>
