@@ -13,7 +13,7 @@ namespace KolayKur.Core.Winget;
 /// <c>ConfigureAwait(false)</c> kullanır: eşzamanlı COM çağrıları (nesne oluşturma, liste okuma) ve devamlar
 /// çağıranın <see cref="SynchronizationContext"/> bağlamında (örn. arayüz iş parçacığı) çalışmaz.
 /// </summary>
-public sealed class ComWingetClient(WingetComFactory factory, FileLog? log = null) : IWingetClient
+public sealed partial class ComWingetClient(WingetComFactory factory, FileLog? log = null) : IWingetClient
 {
     private const int SearchLimit = 50;
     private const double PercentScale = 100;

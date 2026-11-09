@@ -156,6 +156,9 @@ public sealed class OperationReasonTests : IDisposable
             string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
             throw new NotSupportedException();
 
+        public Task<KolayKur.Core.Icons.IconHints> GetIconHintsAsync(string packageId, string? source, CancellationToken ct) =>
+            throw new NotSupportedException();
+
         public Task<OperationOutcome> UninstallAsync(
             string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
             throw new NotSupportedException();

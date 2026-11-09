@@ -2,9 +2,13 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Width="40" Height="40" Focusable="False" IsTabStop="False">
-    <!-- Harf adın ilk harfi; zemin AvatarBrush0..7 (kod arkasında SetResourceReference ile, tema değişince güncellenir). Beyaz harf iki temada da okunur. -->
+    <!-- Harf adın ilk harfi; zemin AvatarBrush0..7 (kod arkasında SetResourceReference ile, tema değişince güncellenir). Beyaz harf iki temada okunur.
+         Gerçek simge bulununca Badge'in zemini IconPlateBrush olur ve simge ImageBrush ile üstüne çizilir (köşe yuvarlaması aynı kalır). -->
     <Border x:Name="Badge" CornerRadius="8">
-        <TextBlock x:Name="LetterText" HorizontalAlignment="Center" VerticalAlignment="Center"
-                   FontSize="18" FontWeight="SemiBold" Foreground="White" />
+        <Grid>
+            <TextBlock x:Name="LetterText" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       FontSize="18" FontWeight="SemiBold" Foreground="White" />
+            <Border x:Name="IconLayer" CornerRadius="8" Visibility="Collapsed" />
+        </Grid>
     </Border>
 </UserControl>

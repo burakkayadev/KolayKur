@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using KolayKur.Core.Icons;
 using KolayKur.Core.Models;
 using KolayKur.Core.Winget;
 
@@ -18,6 +19,7 @@ public sealed class FakeWingetClient : IWingetClient
     private readonly ConcurrentQueue<FakeSearchCall> searchCalls = new();
     private int upgradeListCalls;
     private int installedListCalls;
+    private int iconHintCalls;
     private int running;
     private int maxConcurrent;
 
@@ -88,6 +90,23 @@ public sealed class FakeWingetClient : IWingetClient
     {
         Interlocked.Increment(ref upgradeListCalls);
         return List(Upgrades);
+    }
+
+    /// <summary>Paket kimliğine göre dönecek simge ipuçları (büyük/küçük harf ayırmaz); yoksa boş ipucu.</summary>
+    public ConcurrentDictionary<string, IconHints> IconHintsById { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Doluysa <see cref="GetIconHintsAsync"/> bunu fırlatır.</summary>
+    public Exception? IconHintsException { get; set; }
+
+    /// <summary><see cref="GetIconHintsAsync"/> kaç kez çağrıldı.</summary>
+    public int IconHintCalls => Volatile.Read(ref iconHintCalls);
+
+    public Task<IconHints> GetIconHintsAsync(string packageId, string? source, CancellationToken ct)
+    {
+        Interlocked.Increment(ref iconHintCalls);
+        return IconHintsException is null
+            ? Task.FromResult(IconHintsById.GetValueOrDefault(packageId, IconHints.Empty))
+            : Task.FromException<IconHints>(IconHintsException);
     }
 
     public Task<OperationOutcome> InstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>

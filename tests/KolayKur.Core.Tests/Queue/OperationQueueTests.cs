@@ -353,6 +353,9 @@ public sealed class OperationQueueTests : IDisposable
             string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
             inner.UpgradeAsync(packageId, progress, ct);
 
+        public Task<KolayKur.Core.Icons.IconHints> GetIconHintsAsync(string packageId, string? source, CancellationToken ct) =>
+            inner.GetIconHintsAsync(packageId, source, ct);
+
         public Task<OperationOutcome> UninstallAsync(
             string packageId, IProgress<OperationProgress> progress, CancellationToken ct) =>
             inner.UninstallAsync(packageId, progress, ct);

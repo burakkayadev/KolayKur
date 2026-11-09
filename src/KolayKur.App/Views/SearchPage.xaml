@@ -80,7 +80,7 @@
                     </Grid.ColumnDefinitions>
 
                     <views:PackageAvatarView Grid.Row="0" Grid.Column="0" VerticalAlignment="Top"
-                                             PackageId="{Binding Package.Id}" PackageName="{Binding Package.Name}" />
+                                             PackageId="{Binding Package.Id}" PackageName="{Binding Package.Name}" PackageSource="{Binding Package.Source}" />
 
                     <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,8,0">
                         <TextBlock Text="{Binding Package.Name}" FontSize="14" FontWeight="SemiBold"

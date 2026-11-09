@@ -24,6 +24,7 @@ param(
     [string]$Search = '',
     [ValidateSet('', 'Light', 'Dark')] [string]$SetTheme = '',
     [switch]$OpenPane,
+    [int]$ExtraWaitSeconds = 0,
     [string]$Out = 'out\screenshots\screenshot.png',
     [string]$Exe = ''
 )
@@ -146,6 +147,9 @@ try {
         $go.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
         Start-Sleep -Seconds 8
     }
+
+    # Simgeler arka planda ağdan/yerelden gelir; ekran görüntüsünden önce gelmeleri için isteğe bağlı ek bekleme.
+    if ($ExtraWaitSeconds -gt 0) { Start-Sleep -Seconds $ExtraWaitSeconds }
 
     [void][KkNative]::SetForegroundWindow($hwnd)
     Start-Sleep -Milliseconds 500

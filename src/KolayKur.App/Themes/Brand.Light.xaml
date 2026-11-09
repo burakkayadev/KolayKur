@@ -15,6 +15,9 @@
     <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="#E3F3E3" />
     <SolidColorBrush x:Key="CautionBrush" Color="#9D5D00" />
 
+    <!-- Simge zemini: şeffaf simgeler iki temada da okunsun diye açık, tarafsız bir levha. -->
+    <SolidColorBrush x:Key="IconPlateBrush" Color="#F4F4F5" />
+
     <!-- Harf avatarı paleti (beyaz harfle en az 4.5:1); iki temada aynı. -->
     <SolidColorBrush x:Key="AvatarBrush0" Color="#1F5FA8" />
     <SolidColorBrush x:Key="AvatarBrush1" Color="#B33A1A" />

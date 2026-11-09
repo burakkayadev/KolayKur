@@ -1,3 +1,4 @@
+using KolayKur.Core.Icons;
 using KolayKur.Core.Models;
 using KolayKur.Core.Winget;
 
@@ -153,6 +154,43 @@ public class ComWingetClientRealTests
             Interlocked.Increment(ref postCount);
             d(state);
         }
+    }
+
+    /// <summary>
+    /// Store paketleri winget COM üst verisinde simge vermiyor (elle denendi: Netflix, WhatsApp, Spotify için Icons boş);
+    /// yayıncı sitesi var, simge o siteden gelir.
+    /// </summary>
+    [Fact]
+    public async Task Icon_hints_for_store_app_have_website()
+    {
+        var hints = await client.GetIconHintsAsync("9WZDNCRFJ3TJ", "msstore", Timeout());
+
+        Assert.NotNull(hints.Website);
+    }
+
+    [Fact]
+    public async Task Icon_hints_for_winget_package_can_have_catalog_icon()
+    {
+        var hints = await client.GetIconHintsAsync("Microsoft.PowerToys", "winget", Timeout());
+
+        Assert.NotEmpty(hints.CatalogIcons);
+        Assert.All(hints.CatalogIcons, u => Assert.Equal(Uri.UriSchemeHttps, u.Scheme));
+    }
+
+    [Fact]
+    public async Task Icon_hints_for_git_have_website()
+    {
+        var hints = await client.GetIconHintsAsync("Git.Git", "winget", Timeout());
+
+        Assert.NotNull(hints.Website);
+    }
+
+    [Fact]
+    public async Task Icon_hints_for_unknown_id_are_empty()
+    {
+        var hints = await client.GetIconHintsAsync("No.Such.Package.Ever", null, Timeout());
+
+        Assert.Same(IconHints.Empty, hints);
     }
 
     /// <summary>Makineyi değiştirir. Yalnızca KOLAYKUR_REAL_INSTALL=1 ve 7-Zip yüklü değilken çalışır.</summary>

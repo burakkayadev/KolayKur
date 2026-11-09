@@ -664,6 +664,9 @@ public sealed class InstalledViewModelTests : QueueTestBase
         public Task<OperationOutcome> UpgradeAsync(string id, IProgress<OperationProgress> progress, CancellationToken ct) =>
             throw new NotSupportedException();
 
+        public Task<KolayKur.Core.Icons.IconHints> GetIconHintsAsync(string packageId, string? source, CancellationToken ct) =>
+            throw new NotSupportedException();
+
         public Task<OperationOutcome> UninstallAsync(string id, IProgress<OperationProgress> progress, CancellationToken ct) =>
             throw new NotSupportedException();
     }

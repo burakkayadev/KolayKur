@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Windows;
+using KolayKur.App.Icons;
+using KolayKur.Core.Icons;
 using KolayKur.Core.Health;
 using KolayKur.Core.Localization;
 using KolayKur.Core.Queue;
@@ -120,6 +122,8 @@ public partial class App : Application
         var health = new WingetHealthService(new WindowsSystemProbe());
         var repair = new WingetRepairService(new WindowsRepairActions(), health, fileLog);
         var client = new ComWingetClient(new WingetComFactory(), fileLog);
+        AppIcons.Service = new IconService(
+            client, new HttpIconFetcher(), new WindowsInstalledIconReader(), new WindowsIconDecoder(), new IconCache(AppPaths.Icons), fileLog);
         var queue = new OperationQueue(client, fileLog);
 
         var shell = new ShellViewModel(

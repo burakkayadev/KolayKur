@@ -1,3 +1,4 @@
+using KolayKur.Core.Icons;
 using KolayKur.Core.Models;
 
 namespace KolayKur.Core.Winget;
@@ -15,6 +16,12 @@ public interface IWingetClient
     Task<IReadOnlyList<PackageInfo>> GetInstalledAsync(CancellationToken ct);
 
     Task<IReadOnlyList<PackageInfo>> GetUpgradesAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Paketin simgesini bulmaya yarayan ipuçlarını (katalog simgeleri, site, kurulu program simgesi) okur; salt okur.
+    /// Paket bulunamazsa <see cref="IconHints.Empty"/> döner.
+    /// </summary>
+    Task<IconHints> GetIconHintsAsync(string packageId, string? source, CancellationToken ct);
 
     Task<OperationOutcome> InstallAsync(string packageId, IProgress<OperationProgress> progress, CancellationToken ct);
 

@@ -37,5 +37,7 @@ public static class AppPaths
 
     public static string Downloads => Path.Combine(Root, "downloads");
 
+    public static string Icons => Path.Combine(Root, "icons");
+
     public static string SettingsFile => Path.Combine(Root, "settings.json");
 }
