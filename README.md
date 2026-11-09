@@ -7,6 +7,7 @@ Program tek bir `KolayKur.exe` dosyasıdır. Ek kurulum istemez; .NET çalışma
 ## Neler yapar
 
 - Uygulama arama ve tek tıkla kurma
+- Microsoft Store uygulamaları (örneğin Netflix) da aranır ve kurulur; ücretli Store uygulamaları kurulamaz
 - Birkaç uygulamayı seçip toplu kurma
 - Güncellemeleri listeleme, tek tek veya hepsini birden güncelleme
 - Yüklü uygulamaları listeleme ve kaldırma (kaldırmadan önce onay sorar)
@@ -91,6 +92,7 @@ Dürüst durum notu:
 | Windows Sandbox'ta (winget ve .NET yokken) açılış, winget kurulumu ve arama | Denendi |
 | Toplu kurma ve listeden kurma | Yalnızca otomatik testlerde sınandı |
 | Kurulu ama bozuk bir winget'in gerçek bir makinede onarılması | Henüz denenmedi |
+| Store'dan gerçek kurulum | Henüz denenmedi |
 | Windows 10 | Henüz denenmedi |
 | Arkadaşların GitHub'dan indirip SmartScreen uyarısını geçmesi | Henüz denenmedi |
 
@@ -102,7 +104,7 @@ KolayKur is a small Windows program that lets you use winget (the Windows packag
 
 It ships as a single `KolayKur.exe`. It needs no extra installation: .NET is bundled inside, so you do not need to install .NET. This was verified in Windows Sandbox (which has no .NET installed); it has not yet been tried on friends' PCs.
 
-**Features:** search and one-click install; multi-select install; list updates and update one or all; list and uninstall installed apps (asks first); export your app list to a file and install from a list; Turkish and English UI; light, dark or follow-Windows theme; diagnoses and installs or repairs a missing or broken winget (the missing-winget case was verified in Windows Sandbox; repairing an installed-but-broken winget on a real machine has not been tried yet).
+**Features:** search and one-click install; Microsoft Store apps (for example Netflix) are searched and installed too, but paid Store apps cannot be installed; multi-select install; list updates and update one or all; list and uninstall installed apps (asks first); export your app list to a file and install from a list; Turkish and English UI; light, dark or follow-Windows theme; diagnoses and installs or repairs a missing or broken winget (the missing-winget case was verified in Windows Sandbox; repairing an installed-but-broken winget on a real machine has not been tried yet).
 
 **Status:** install, update, uninstall, the UAC "No" path, the English UI and export were tried with the real winget on the owner's PC and worked (8 November 2026). Batch install and install-from-list are covered by automated tests only.
 
@@ -120,4 +122,4 @@ It ships as a single `KolayKur.exe`. It needs no extra installation: .NET is bun
 
 **Build:** see the `dotnet publish` command above. Run tests with `dotnet test --filter "Category!=Real"`. Tests marked `Real` use the real winget; the one that installs and uninstalls software only runs when `KOLAYKUR_REAL_INSTALL=1` is set.
 
-**Not yet tested:** repairing an installed-but-broken winget on a real machine, batch install and install-from-list against the real winget, Windows 10, and downloads by friends through GitHub Releases (SmartScreen).
+**Not yet tested:** real installs from the Microsoft Store, repairing an installed-but-broken winget on a real machine, batch install and install-from-list against the real winget, Windows 10, and downloads by friends through GitHub Releases (SmartScreen).

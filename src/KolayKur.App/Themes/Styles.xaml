@@ -51,6 +51,16 @@
         <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
 
+    <!-- Microsoft Store etiketi: nötr (ikincil yazı, kart çizgisi tonu), marka rengi değil; görünürlüğü kullanan bağlar. -->
+    <Style x:Key="StoreChipStyle" TargetType="Border">
+        <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="6,1" />
+        <Setter Property="Margin" Value="0,4,0,0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+
     <!-- Odak çerçevesi: menü düğmesinin etrafında vurgu renkli ince çizgi. -->
     <Style x:Key="RailButtonFocusVisualStyle">
         <Setter Property="Control.Template">

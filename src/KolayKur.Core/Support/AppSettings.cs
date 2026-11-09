@@ -6,8 +6,12 @@ namespace KolayKur.Core.Support;
 public sealed record AppSettings(
     string Language = "tr",
     bool LicenseNoticeShown = false,
-    [property: JsonConverter(typeof(AppThemeJsonConverter))] AppTheme Theme = AppTheme.System)
+    [property: JsonConverter(typeof(AppThemeJsonConverter))] AppTheme Theme = AppTheme.System,
+    [property: JsonConverter(typeof(TolerantInt32JsonConverter))] int LicenseNoticeVersion = 0)
 {
+    /// <summary>Lisans notu hiç gösterilmediyse 0; eski dosyalarda yalnız <see cref="LicenseNoticeShown"/> vardır ve 1 sayılır.</summary>
+    public int EffectiveLicenseNoticeVersion => Math.Max(LicenseNoticeVersion, LicenseNoticeShown ? 1 : 0);
+
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     /// <summary>

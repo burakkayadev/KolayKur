@@ -34,3 +34,24 @@ public sealed class AppThemeJsonConverter : JsonConverter<AppTheme>
     public override void Write(Utf8JsonWriter writer, AppTheme value, JsonSerializerOptions options) =>
         writer.WriteStringValue(value.ToString());
 }
+
+/// <summary>
+/// Tam sayı ayarı okur; sayı olmayan, ondalıklı, taşan ya da null değer 0 sayılır ve değerin tamamı atlanır;
+/// böylece bozuk bir değer diğer ayarları kaybettirmez.
+/// </summary>
+public sealed class TolerantInt32JsonConverter : JsonConverter<int>
+{
+    public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var value))
+        {
+            return value;
+        }
+
+        reader.Skip();
+        return 0;
+    }
+
+    public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options) =>
+        writer.WriteNumberValue(value);
+}

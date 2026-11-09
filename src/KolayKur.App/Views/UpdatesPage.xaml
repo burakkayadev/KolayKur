@@ -45,6 +45,11 @@
                                    ToolTip="{Binding Name}" />
                         <TextBlock Text="{Binding Publisher}" Style="{StaticResource SecondaryTextStyle}"
                                    Margin="0,2,0,0" ToolTip="{Binding Publisher}" />
+                        <Border Style="{StaticResource StoreChipStyle}"
+                                Visibility="{Binding Source, Converter={StaticResource StoreSourceVisibility}}">
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" FontSize="11"
+                                       Text="{Binding [Source_MicrosoftStore], Source={x:Static loc:Loc.Instance}}" />
+                        </Border>
                         <TextBlock Text="{Binding Id}" Style="{StaticResource SecondaryTextStyle}"
                                    FontSize="11" Opacity="0.8" ToolTip="{Binding Id}" />
                     </StackPanel>

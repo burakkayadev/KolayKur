@@ -179,6 +179,57 @@ public sealed class ShellViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task License_notice_shows_for_new_users()
+    {
+        await CreateShell(new FakeSystemProbe()).StartAsync(CancellationToken.None);
+
+        Assert.Single(dialogs.Informed);
+        Assert.Equal(ShellViewModel.CurrentLicenseNoticeVersion, AppSettings.Load(SettingsPath).LicenseNoticeVersion);
+    }
+
+    [Fact]
+    public async Task Updated_notice_shows_once_for_old_users()
+    {
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(SettingsPath, "{\"LicenseNoticeShown\":true}");
+
+        await CreateShell(new FakeSystemProbe()).StartAsync(CancellationToken.None);
+        await CreateShell(new FakeSystemProbe()).StartAsync(CancellationToken.None);
+
+        Assert.Single(dialogs.Informed);
+        var saved = AppSettings.Load(SettingsPath);
+        Assert.Equal(2, saved.LicenseNoticeVersion);
+        Assert.True(saved.LicenseNoticeShown);
+    }
+
+    [Fact]
+    public async Task Current_notice_version_is_not_shown_again()
+    {
+        new AppSettings(LicenseNoticeShown: true, LicenseNoticeVersion: 2).Save(SettingsPath);
+
+        await CreateShell(new FakeSystemProbe()).StartAsync(CancellationToken.None);
+
+        Assert.Empty(dialogs.Informed);
+    }
+
+    [Fact]
+    public void Notice_mentions_store_in_both_languages()
+    {
+        try
+        {
+            foreach (var language in new[] { "tr", "en" })
+            {
+                Loc.Instance.SetLanguage(language);
+                Assert.Contains("Microsoft Store", Loc.Instance["License_Notice"]);
+            }
+        }
+        finally
+        {
+            Loc.Instance.SetLanguage("tr");
+        }
+    }
+
+    [Fact]
     public async Task Start_applies_saved_language_and_keeps_it_when_saving_notice()
     {
         new AppSettings("en").Save(SettingsPath);
@@ -187,7 +238,7 @@ public sealed class ShellViewModelTests : IDisposable
         await shell.StartAsync(CancellationToken.None);
 
         Assert.Equal("Search", Loc.Instance["Menu_Search"]);
-        Assert.Equal(new AppSettings("en", LicenseNoticeShown: true), AppSettings.Load(SettingsPath));
+        Assert.Equal(new AppSettings("en", LicenseNoticeShown: true, LicenseNoticeVersion: 2), AppSettings.Load(SettingsPath));
     }
 
     [Fact]

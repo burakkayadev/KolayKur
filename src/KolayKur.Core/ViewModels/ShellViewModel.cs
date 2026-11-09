@@ -22,6 +22,9 @@ public sealed partial class ShellViewModel(
     Func<WingetDiagnosis, RepairViewModel>? createRepair = null,
     FileLog? log = null) : ObservableObject
 {
+    /// <summary>Lisans notunun güncel sürümü; metin anlamlı biçimde değişince artırılır ve bir kez daha gösterilir.</summary>
+    public const int CurrentLicenseNoticeVersion = 2;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsMenuEnabled))]
     private ShellPage currentPage = ShellPage.Search;
@@ -182,7 +185,7 @@ public sealed partial class ShellViewModel(
 
     private void ShowLicenseNoticeOnce(AppSettings settings)
     {
-        if (settings.LicenseNoticeShown)
+        if (settings.EffectiveLicenseNoticeVersion >= CurrentLicenseNoticeVersion)
         {
             return;
         }
@@ -190,7 +193,7 @@ public sealed partial class ShellViewModel(
         dialogs.Inform(Loc.Instance["License_Notice"]);
         try
         {
-            (settings with { LicenseNoticeShown = true }).Save(settingsPath);
+            (settings with { LicenseNoticeShown = true, LicenseNoticeVersion = CurrentLicenseNoticeVersion }).Save(settingsPath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

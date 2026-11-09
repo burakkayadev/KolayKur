@@ -67,7 +67,7 @@
     <value>Operations are still running. If you close now they may be left unfinished. Do you want to close anyway?</value>
   </data>
   <data name="License_Notice" xml:space="preserve">
-    <value>Pressing "Install" means you accept that app's license. The program reminds you of this only on the first launch.</value>
+    <value>Pressing "Install" means you accept that app's license. Installing from the Microsoft Store means accepting the Microsoft Store terms. The program reminds you of this only on the first launch.</value>
   </data>
   <data name="Repair_Title" xml:space="preserve">
     <value>Winget needs to be repaired</value>
@@ -116,6 +116,9 @@
   </data>
   <data name="Search_InstallSelectedCount" xml:space="preserve">
     <value>Install selected ({0})</value>
+  </data>
+  <data name="Source_MicrosoftStore" xml:space="preserve">
+    <value>Microsoft Store</value>
   </data>
   <data name="Search_Installed" xml:space="preserve">
     <value>Installed</value>

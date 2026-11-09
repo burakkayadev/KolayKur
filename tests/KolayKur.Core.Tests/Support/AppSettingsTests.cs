@@ -68,6 +68,32 @@ public sealed class AppSettingsTests : IDisposable
     }
 
     [Fact]
+    public void Notice_version_defaults_to_zero_and_round_trips()
+    {
+        Assert.Equal(0, new AppSettings().LicenseNoticeVersion);
+        new AppSettings("en", LicenseNoticeShown: true, LicenseNoticeVersion: 2).Save(SettingsPath);
+
+        Assert.Equal(2, AppSettings.Load(SettingsPath).LicenseNoticeVersion);
+    }
+
+    [Theory]
+    [InlineData("\"two\"")]
+    [InlineData("null")]
+    [InlineData("{\"x\":1}")]
+    [InlineData("1.5")]
+    public void Bad_notice_version_falls_back_to_zero_and_keeps_other_values(string versionJson)
+    {
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(SettingsPath, $"{{\"Language\":\"en\",\"LicenseNoticeVersion\":{versionJson},\"LicenseNoticeShown\":true}}");
+
+        var settings = AppSettings.Load(SettingsPath);
+
+        Assert.Equal(0, settings.LicenseNoticeVersion);
+        Assert.Equal("en", settings.Language);
+        Assert.True(settings.LicenseNoticeShown);
+    }
+
+    [Fact]
     public void Theme_defaults_to_system_when_missing()
     {
         // Arrange

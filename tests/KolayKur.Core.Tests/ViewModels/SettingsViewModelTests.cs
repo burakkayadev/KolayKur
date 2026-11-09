@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using KolayKur.Core.Health;
 using KolayKur.Core.Localization;
 using KolayKur.Core.Queue;
@@ -42,7 +42,7 @@ public sealed class SettingsViewModelTests : IDisposable
             log: Log);
         // Lisans notu bir kez gösterilmiş olsun; Inform çağrıları yalnızca ayarlar sayfasından gelsin.
         Directory.CreateDirectory(directory);
-        new AppSettings(Language: "tr", LicenseNoticeShown: true, Theme: theme).Save(SettingsPath);
+        new AppSettings(Language: "tr", LicenseNoticeShown: true, LicenseNoticeVersion: 2, Theme: theme).Save(SettingsPath);
         await shell.StartAsync(CancellationToken.None);
         return (new SettingsViewModel(shell, Log, dialogs, SettingsPath, themes), shell);
     }
@@ -247,7 +247,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         // Act
         Directory.CreateDirectory(directory);
-        new AppSettings(Language: "tr", LicenseNoticeShown: true).Save(SettingsPath);
+        new AppSettings(Language: "tr", LicenseNoticeShown: true, LicenseNoticeVersion: 2).Save(SettingsPath);
         await shell.StartAsync(CancellationToken.None);
 
         // Assert
@@ -270,7 +270,7 @@ public sealed class SettingsViewModelTests : IDisposable
             d => new RepairViewModel(repair, d, Log),
             Log);
         Directory.CreateDirectory(directory);
-        new AppSettings(Language: "tr", LicenseNoticeShown: true).Save(SettingsPath);
+        new AppSettings(Language: "tr", LicenseNoticeShown: true, LicenseNoticeVersion: 2).Save(SettingsPath);
         return (shell, new SettingsViewModel(shell, Log, dialogs, SettingsPath));
     }
 

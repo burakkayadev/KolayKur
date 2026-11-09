@@ -89,6 +89,11 @@
                                    ToolTip="{Binding Package.Name}" />
                         <TextBlock Text="{Binding Package.Publisher}" Style="{StaticResource SecondaryTextStyle}"
                                    Margin="0,2,0,0" ToolTip="{Binding Package.Publisher}" />
+                        <Border Style="{StaticResource StoreChipStyle}"
+                                Visibility="{Binding Package.Source, Converter={StaticResource StoreSourceVisibility}}">
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" FontSize="11"
+                                       Text="{Binding [Source_MicrosoftStore], Source={x:Static loc:Loc.Instance}}" />
+                        </Border>
                         <TextBlock Text="{Binding Package.Id}" Style="{StaticResource SecondaryTextStyle}"
                                    FontSize="11" Opacity="0.8" ToolTip="{Binding Package.Id}" />
                     </StackPanel>
