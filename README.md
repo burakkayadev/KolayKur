@@ -1,3 +1,6 @@
+> **⚠️ Proje Durumu: Arşivlendi / Artık Yayınlanmayacak**
+> Bu proje geliştirme sürecini tamamlamış olup artık yeni güncelleme almayacak ve yayınlanmayacaktır. Mevcut kaynak kodlar yalnızca referans amaçlı bırakılmıştır.
+
 # KolayKur — Windows için tek tıkla uygulama kurucu
 
 **Ara · Kur · Güncelle · Kaldır.**
